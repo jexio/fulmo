@@ -1011,11 +1011,11 @@ virtualenv = ">=20.0.8"
 
 [[package]]
 name = "prompt-toolkit"
-version = "3.0.19"
+version = "3.0.20"
 description = "Library for building powerful interactive command lines in Python"
 category = "dev"
 optional = false
-python-versions = ">=3.6.1"
+python-versions = ">=3.6.2"
 
 [package.dependencies]
 wcwidth = "*"
@@ -2511,8 +2511,8 @@ pre-commit = [
     {file = "pre_commit-2.14.0.tar.gz", hash = "sha256:2386eeb4cf6633712c7cc9ede83684d53c8cafca6b59f79c738098b51c6d206c"},
 ]
 prompt-toolkit = [
-    {file = "prompt_toolkit-3.0.19-py3-none-any.whl", hash = "sha256:7089d8d2938043508aa9420ec18ce0922885304cddae87fb96eebca942299f88"},
-    {file = "prompt_toolkit-3.0.19.tar.gz", hash = "sha256:08360ee3a3148bdb5163621709ee322ec34fc4375099afa4bbf751e9b7b7fa4f"},
+    {file = "prompt_toolkit-3.0.20-py3-none-any.whl", hash = "sha256:6076e46efae19b1e0ca1ec003ed37a933dc94b4d20f486235d436e64771dcd5c"},
+    {file = "prompt_toolkit-3.0.20.tar.gz", hash = "sha256:eb71d5a6b72ce6db177af4a7d4d7085b99756bf656d98ffcc4fecd36850eea6c"},
 ]
 protobuf = [
     {file = "protobuf-3.17.3-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:ab6bb0e270c6c58e7ff4345b3a803cc59dbee19ddf77a4719c5b635f1d547aa8"},
