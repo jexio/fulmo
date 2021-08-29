@@ -596,7 +596,7 @@ protobuf = ["grpcio-tools (>=1.39.0)"]
 
 [[package]]
 name = "hydra-core"
-version = "1.1.0"
+version = "1.1.1"
 description = "A framework for elegantly configuring complex applications"
 category = "main"
 optional = false
@@ -1824,7 +1824,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = "<3.10,>=3.8"
-content-hash = "e551f5719b921fb04f98758a9f16cfb446bda5f56b8d99e5943a33aca3c4a20d"
+content-hash = "7c4e44a6d1bfd73879dd8c9bf9a3c2bace1822ab5cc3eb59d9bb036c2eacfefb"
 
 [metadata.files]
 absl-py = [
@@ -2106,8 +2106,8 @@ grpcio = [
     {file = "grpcio-1.39.0.tar.gz", hash = "sha256:57974361a459d6fe04c9ae0af1845974606612249f467bbd2062d963cb90f407"},
 ]
 hydra-core = [
-    {file = "hydra-core-1.1.0.tar.gz", hash = "sha256:ef20f54c99d6061e1fffee33f43901eb7a09f23291f6bda56afe1c8f68033b2b"},
-    {file = "hydra_core-1.1.0-py3-none-any.whl", hash = "sha256:22370397633af05db594d69d885ead0728039feaec1bb4f666643f811dc6d183"},
+    {file = "hydra-core-1.1.1.tar.gz", hash = "sha256:d396d4d979ff66e2d654b8ef5435ad3b6bbd093c4330f3ed316c339d5d741269"},
+    {file = "hydra_core-1.1.1-py3-none-any.whl", hash = "sha256:928b154d8105db4ee67d768e3cd0f74ca9373121fc99dee54488393b17a31929"},
 ]
 identify = [
     {file = "identify-2.2.13-py2.py3-none-any.whl", hash = "sha256:7199679b5be13a6b40e6e19ea473e789b11b4e3b60986499b1f589ffb03c217c"},
