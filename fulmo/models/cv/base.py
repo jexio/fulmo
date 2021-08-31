@@ -84,14 +84,14 @@ class Head(AbstractHead, nn.Module):
 
         self._layers: Sequence[nn.ModuleList] = []
         layer_names = layers_order * num_layers
-        include_bias = "bn" in layers_order
+        include_bn = "bn" in layers_order
         activation_parameters = activation_parameters if activation_parameters else {}
         layers = list()
 
         for name in layer_names:
             if name == "linear":
                 out_features = in_channels // 2
-                layer = nn.Linear(in_features=in_channels, out_features=out_features, bias=not include_bias)
+                layer = nn.Linear(in_features=in_channels, out_features=out_features, bias=not include_bn)
                 in_channels = out_features
             elif name == "bn":
                 layer = nn.BatchNorm1d(in_channels)
@@ -105,7 +105,7 @@ class Head(AbstractHead, nn.Module):
             layers.append(layer)
 
         self.model = nn.Sequential(*layers)
-        self.fc = nn.Linear(in_channels, out_channels)
+        self.fc = nn.Linear(in_channels, out_channels, bias=not include_bn)
         self._init_weights()
 
     @property
