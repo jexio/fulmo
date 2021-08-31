@@ -9,9 +9,9 @@ from .base import BaseCallback
 class AugmentationOnOffCallback(BaseCallback):
     """Enable/disable augmentations for a training dataset."""
 
-    def __init__(self, apply_after_epoch: Optional[int] = None, stop_after_epoch: Optional[int] = None) -> None:
+    def __init__(self, apply_on_epoch: Optional[int] = None, stop_after_epoch: Optional[int] = None) -> None:
         """Create a new instance of AugmentationOnOffCallback."""
-        super().__init__(apply_after_epoch, stop_after_epoch)
+        super().__init__(apply_on_epoch, stop_after_epoch)
         self._disable = True
 
     def on_before_accelerator_backend_setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
