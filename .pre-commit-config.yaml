@@ -18,6 +18,14 @@ repos:
   repo: https://github.com/commitizen-tools/commitizen
   rev: master
 - hooks:
+  - entry: poetry run mypy
+    id: mypy
+    language: python
+    name: mypy
+    types:
+    - python3
+  repo: local
+- hooks:
   - entry: poetry run isort
     id: isort
     language: python
