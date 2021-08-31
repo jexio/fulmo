@@ -11,9 +11,9 @@ from torch.optim.optimizer import Optimizer
 from ..callbacks.base import BaseCallback
 from ..losses import CriterionMatcher, CriterionWrapper, OnlineLabelSmoothing
 from ..metrics import MetricWrapper
-from ..optimizers import Lookahead
 from ..settings import Stage, logger
-from .exceptions import PipelineCriterionBuildError, PipelineMetricBuildError, PipelineOptimizerBuildError, PipelineStepError
+from ..models.utils import freeze_bn, unfreeze_bn
+from .exceptions import PipelineCriterionBuildError, PipelineMetricBuildError, PipelineOptimizerBuildError
 
 TOptimizer = Dict[str, Union[Optimizer, Dict[str, Union[int, str, _LRScheduler]]]]
 
@@ -159,28 +159,32 @@ class BaseModule(LightningModule):
 
     def _step(self, batch: Dict[str, torch.Tensor], batch_idx: int, stage: Stage) -> Dict[str, torch.Tensor]:
         """Compute losses and some additional metrics.
+
         Args:
             batch: The output of your :class:torch.utils.data.DataLoader
             batch_idx: Integer displaying index of this batch
             stage: Stage name. ("test", "train", "valid")
+
         Returns:
             the losses and some additional metrics
-        Raises:
-            PipelineStepError: if something went wrong.
         """
         outputs = self(batch)
         outputs = self._postprocess_outputs(outputs)
-        losses = self.criterion_wrapper(outputs, batch, stage)
-        try:
-            log_dict = self._compute_metrics(outputs, batch, stage)
-        except Exception as e:  # noqa: B902
-            logger.exception(
-                "Error caught in epoch %s",
-                self.trainer.current_epoch,
-                extra={"stage": stage.value, "step": "compute_metrics"},
-            )
-            raise PipelineStepError from e
+        losses, loss = self.criterion_wrapper(outputs, batch, stage)
+        if stage == Stage.train:
+            is_second_step_on = self.config.get("second_forward_backward", None)
+            if is_second_step_on and self.config.optimizer.get("second_optimizer", None):
+                optimizer: Optimizer = self.optimizers()
+                self.manual_backward(loss, optimizer)
+                optimizer.first_step(zero_grad=True)
 
+                freeze_bn(self.model)
+                _, loss_ = self.compute_loss(batch)
+                self.manual_backward(loss_, optimizer)
+                optimizer.second_step(zero_grad=True)
+                unfreeze_bn(self.model)
+
+        log_dict = self._compute_metrics(outputs, batch, stage)
         output_dict = dict()
         for key, value in outputs.items():
             batch[key] = value
@@ -193,18 +197,8 @@ class BaseModule(LightningModule):
             output_dict[f"loss/{key}"] = item
             log_dict[f"{stage.value}/loss/{key}"] = item
 
-        losses = torch.stack(list(losses.values()))
-        loss_reduction = self.config.get("loss_reduction", None)
-        if loss_reduction == "mean":
-            loss = losses.mean()
-        elif loss_reduction == "sum":
-            loss = losses.sum()
-        else:
-            raise PipelineStepError(f"Incorrect loss reduction name: {loss_reduction}")
-
         output_dict["loss"] = loss
         log_dict[f"{stage.value}/loss"] = loss
-
         return {**log_dict, **output_dict}
 
     def _postprocess_outputs(self, outputs: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
@@ -232,7 +226,8 @@ class BaseModule(LightningModule):
         output_dict = self._step(batch, batch_idx, stage)
         log_dict = {key: value for key, value in output_dict.items() if key.startswith(stage.value)}
         output_dict = {key: value for key, value in output_dict.items() if not key.startswith(stage.value)}
-        self.log_dict(log_dict, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist)
+        for key, value in log_dict.items():
+            self.log(key, value, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist)
         return output_dict
 
     def validation_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
@@ -249,7 +244,8 @@ class BaseModule(LightningModule):
         output_dict = self._step(batch, batch_idx, stage)
         log_dict = {key: value for key, value in output_dict.items() if key.startswith(stage.value)}
         output_dict = {key: value for key, value in output_dict.items() if not key.startswith(stage.value)}
-        self.log_dict(log_dict, on_step=False, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist)
+        for key, value in log_dict.items():
+            self.log(key, value, on_step=False, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist)
         return output_dict
 
     def test_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
@@ -266,7 +262,8 @@ class BaseModule(LightningModule):
         output_dict = self._step(batch, batch_idx, stage)
         log_dict = {key: value for key, value in output_dict.items() if key.startswith(stage.value)}
         output_dict = {key: value for key, value in output_dict.items() if not key.startswith(stage.value)}
-        self.log(log_dict, on_step=False, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist)
+        for key, value in log_dict.items():
+            self.log(key, value, on_step=False, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist)
         return output_dict
 
     def on_train_epoch_end(self, unused: int = None) -> None:
@@ -290,7 +287,6 @@ class BaseModule(LightningModule):
     ) -> Union[Optimizer, Sequence[Optimizer], TOptimizer, Sequence[TOptimizer], None]:
         """Build optimizers and schedulers from config."""
         model_parameters = self.model.parameters()
-        lookahead: Optional[Dict] = None
         if "optimizer_extension" in self.config:
             model_parameters = list()
             per_type: Optional[
@@ -317,11 +313,24 @@ class BaseModule(LightningModule):
                 else:
                     model_parameters.append(dict(params=module.parameters(), **params_per_module))
             model_parameters = iter(model_parameters)
-            lookahead = self.config.optimizer_extension.get("lookahead", None)
 
-        optimizer: Optimizer = hydra.utils.instantiate(self.config.optimizer, params=model_parameters)
-        if lookahead:
-            optimizer = Lookahead(optimizer, **lookahead)
+        if self.config.optimizer.get("second_optimizer", None) and self.config.get("second_forward_backward", None):
+            if "SAM" in self.config.optimizer["second_optimizer"]["_target_"]:
+                optimizer: Optimizer = hydra.utils.instantiate(self.config.optimizer["second_optimizer"],
+                                                               _convert_="partial",
+                                                               params=model_parameters,
+                                                               optimizer=self.config.optimizer["base_optimizer"])
+            else:
+                base_optimizer: Optimizer = hydra.utils.instantiate(self.config.optimizer["base_optimizer"],
+                                                                    _convert_="partial",
+                                                                    params=model_parameters)
+                optimizer: Optimizer = hydra.utils.instantiate(self.config.optimizer["second_optimizer"],
+                                                               _convert_="partial",
+                                                               optimizer=base_optimizer)
+        else:
+            optimizer: Optimizer = hydra.utils.instantiate(self.config.optimizer["base_optimizer"],
+                                                           _convert_="partial",
+                                                           params=model_parameters)
 
         if self.config.get("use_lr_scheduler", None):
             scheduler_class = self.config.scheduler["_target_"]
