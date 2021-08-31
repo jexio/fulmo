@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Dict, List, Optional, Sequence, Type, Union
+from typing import Dict, List, Optional, Sequence, Type, Union, Callable
 
 import hydra
 import torch
@@ -13,8 +13,7 @@ from ..losses import CriterionMatcher, CriterionWrapper, OnlineLabelSmoothing
 from ..metrics import MetricWrapper
 from ..optimizers import Lookahead
 from ..settings import Stage, logger
-from .exceptions import PipelineCriterionBuildError, PipelineMetricBuildError, PipelineStepError
-
+from .exceptions import PipelineCriterionBuildError, PipelineMetricBuildError, PipelineOptimizerBuildError, PipelineStepError
 
 TOptimizer = Dict[str, Union[Optimizer, Dict[str, Union[int, str, _LRScheduler]]]]
 
@@ -34,6 +33,7 @@ class BaseModule(LightningModule):
         self.config = config
         self.model: torch.nn.Module = self._build_model()
         self.criterion_wrapper: CriterionWrapper = self._build_criterion()
+        self._check_config()
         self._train_metrics = self._build_metrics()
         self._test_metrics = self._build_metrics()
         self._val_metrics = self._build_metrics()
@@ -43,29 +43,66 @@ class BaseModule(LightningModule):
         self._sync_dist = self.config.get("sync_dist") or False
         OmegaConf.set_struct(self.config, True)
 
-    def _build_metrics(self) -> torch.nn.ModuleDict:
-        """Build metrics.
-
-        Returns:
-            `:class:torch.nn.ModuleDict[str, pl_metrics]`
+    def _check_config(self) -> None:
+        """Check config before start building parts of pipeline.
 
         Raises:
             PipelineMetricBuildError: if `target_key` or `output_key` does not exist
+            PipelineCriterionBuildError: if the number of losses is greater than 1 and
+                the `strategy' is not a `default`. If `target_key` or `output_key` does not exist
+            PipelineOptimizerBuildError: if `second_forward_backward` is True but the second optimizer is not defined.
+            PipelineCriterionBuildError: if `reduction_func` is not a callable object.
         """
-        metrics: Dict[str, MetricWrapper] = {}
         for metric_name, metric_config in self.config["metrics"].items():
             copy_metric_config = deepcopy(metric_config)
             copy_metric_config.pop("wrapper_params")
             wrapper_params = metric_config.get("wrapper_params", None)
             if not wrapper_params:
-                raise PipelineMetricBuildError(f"Wrapper parameters key for metric: {metric_name} does not exist")
+                raise PipelineMetricBuildError(f"Wrapper parameters key for metric: {metric_name} does not exist.")
 
             target_key = wrapper_params.get("target_key", None)
             output_key = wrapper_params.get("output_key", None)
             if not target_key:
-                raise PipelineMetricBuildError(f"Target key for metric: {metric_name} does not exist")
+                raise PipelineMetricBuildError(f"Target key for metric: {metric_name} does not exist.")
             if not output_key:
-                raise PipelineMetricBuildError(f"Output key for metric: {metric_name} does not exist")
+                raise PipelineMetricBuildError(f"Output key for metric: {metric_name} does not exist.")
+
+        for loss_name, loss_config in self.config["losses"].items():
+            copy_loss_config = deepcopy(loss_config)
+            wrapper_params = copy_loss_config.pop("wrapper_params", None)
+            matcher_params = copy_loss_config.pop("matcher_params", None)
+            if not wrapper_params:
+                raise PipelineCriterionBuildError(f"Wrapper parameters key for loss: {loss_name} does not exist.")
+            if not matcher_params:
+                raise PipelineCriterionBuildError(f"Matcher parameters key for loss: {loss_name} does not exist.")
+
+            output_key = matcher_params.get("output_key", None)
+            target_key = matcher_params.get("target_key", None)
+            if not target_key:
+                raise PipelineCriterionBuildError(f"Target key for loss: {loss_name} does not exist.")
+            elif not output_key:
+                raise PipelineCriterionBuildError(f"Output key for loss: {loss_name} does not exist.")
+
+        is_second_step_on = self.config.get("second_forward_backward", None)
+        if self.config.optimizer.get("second_optimizer", None) and is_second_step_on is True:
+            raise PipelineOptimizerBuildError("`second_forward_backward` is True "
+                                              "but the second optimizer is not defined.")
+
+        loss_reduction = self.config.get("reduction_func", None)
+        if not isinstance(loss_reduction, Callable):
+            raise PipelineCriterionBuildError("`reduction_func` is not a callable object.")
+
+    def _build_metrics(self) -> torch.nn.ModuleDict:
+        """Build metrics.
+
+        Returns:
+            `:class:torch.nn.ModuleDict[str, pl_metrics]`
+        """
+        metrics: Dict[str, MetricWrapper] = {}
+        for metric_name, metric_config in self.config["metrics"].items():
+            copy_metric_config = deepcopy(metric_config)
+            copy_metric_config.pop("wrapper_params")
+            wrapper_params = metric_config.get("wrapper_params")
 
             metrics[metric_name] = MetricWrapper(
                 hydra.utils.instantiate(copy_metric_config, _convert_="partial"), **wrapper_params
@@ -85,34 +122,20 @@ class BaseModule(LightningModule):
         """Build criterion from config.
 
         Returns:
-            Wrapper on losses
-
-        Raises:
-            PipelineCriterionBuildError: if the number of losses is greater than 1 and
-                the `strategy' is not a `default`. If `target_key` or `output_key` does not exist
+            Wrapper for losses
         """
         criterion = {}
         weight = {}
         for loss_name, loss_config in self.config["losses"].items():
             copy_loss_config = deepcopy(loss_config)
-            wrapper_params = copy_loss_config.pop("wrapper_params", None)
-            matcher_params = copy_loss_config.pop("matcher_params", None)
-            if not wrapper_params:
-                raise PipelineCriterionBuildError(f"Wrapper parameters key for loss: {loss_name} does not exist")
-            if not matcher_params:
-                raise PipelineCriterionBuildError(f"Matcher parameters key for loss: {loss_name} does not exist")
+            wrapper_params = copy_loss_config.pop("wrapper_params")
+            matcher_params = copy_loss_config.pop("matcher_params")
 
             weight[loss_name] = wrapper_params.get("weight", 1.0)
-            output_key = matcher_params.get("output_key", None)
-            target_key = matcher_params.get("target_key", None)
-            if not target_key:
-                raise PipelineCriterionBuildError(f"Target key for loss: {loss_name} does not exist")
-            elif not output_key:
-                raise PipelineCriterionBuildError(f"Output key for loss: {loss_name} does not exist")
             criterion[loss_name] = CriterionMatcher(hydra.utils.instantiate(copy_loss_config), **matcher_params)
 
         criterion = torch.nn.ModuleDict(modules=criterion)
-        criterion = CriterionWrapper(criterion, weight)
+        criterion = CriterionWrapper(criterion, self.config.get("reduction_func"), weight)
         return criterion
 
     def _compute_metrics(
@@ -136,15 +159,12 @@ class BaseModule(LightningModule):
 
     def _step(self, batch: Dict[str, torch.Tensor], batch_idx: int, stage: Stage) -> Dict[str, torch.Tensor]:
         """Compute losses and some additional metrics.
-
         Args:
             batch: The output of your :class:torch.utils.data.DataLoader
             batch_idx: Integer displaying index of this batch
             stage: Stage name. ("test", "train", "valid")
-
         Returns:
             the losses and some additional metrics
-
         Raises:
             PipelineStepError: if something went wrong.
         """
@@ -212,7 +232,7 @@ class BaseModule(LightningModule):
         output_dict = self._step(batch, batch_idx, stage)
         log_dict = {key: value for key, value in output_dict.items() if key.startswith(stage.value)}
         output_dict = {key: value for key, value in output_dict.items() if not key.startswith(stage.value)}
-        self.log_dict(log_dict, on_step=True, on_epoch=True, prog_bar=True)
+        self.log_dict(log_dict, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist)
         return output_dict
 
     def validation_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
@@ -246,7 +266,7 @@ class BaseModule(LightningModule):
         output_dict = self._step(batch, batch_idx, stage)
         log_dict = {key: value for key, value in output_dict.items() if key.startswith(stage.value)}
         output_dict = {key: value for key, value in output_dict.items() if not key.startswith(stage.value)}
-        self.log_dict(log_dict, on_step=False, on_epoch=True)
+        self.log(log_dict, on_step=False, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist)
         return output_dict
 
     def on_train_epoch_end(self, unused: int = None) -> None:
