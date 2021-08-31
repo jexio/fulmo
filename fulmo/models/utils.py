@@ -18,4 +18,12 @@ def freeze_bn(model: nn.Module) -> None:
             m.bias.requires_grad = False
 
 
-__all__ = ["freeze_bn", "replace_dropout"]
+def unfreeze_bn(model: nn.Module) -> None:
+    """Unfreeze all BatchNorm layers."""
+    for m in model.modules():
+        if isinstance(m, (nn.BatchNorm3d, nn.BatchNorm2d, nn.BatchNorm1d)):
+            m.weight.requires_grad = True
+            m.bias.requires_grad = True
+
+
+__all__ = ["freeze_bn", "replace_dropout", "unfreeze_bn"]
