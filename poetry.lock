@@ -752,7 +752,7 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "kornia"
-version = "0.5.8"
+version = "0.5.10"
 description = "Open Source Differentiable Computer Vision Library for PyTorch"
 category = "main"
 optional = false
@@ -2201,8 +2201,8 @@ kiwisolver = [
     {file = "kiwisolver-1.3.2.tar.gz", hash = "sha256:fc4453705b81d03568d5b808ad8f09c77c47534f6ac2e72e733f9ca4714aa75c"},
 ]
 kornia = [
-    {file = "kornia-0.5.8-py2.py3-none-any.whl", hash = "sha256:19a99732d26992dafd3bdf466caeed6a88877fe262c5e817402a310df2c657b7"},
-    {file = "kornia-0.5.8.tar.gz", hash = "sha256:fa9b8bd880d32a6779709448f743bf00083bc8de3a2e190b7aa9b352b1aef283"},
+    {file = "kornia-0.5.10-py2.py3-none-any.whl", hash = "sha256:14ff44044bf07eb6f5b8dc5f5244e064bb02e5b05a500d161c495f69cfa607a4"},
+    {file = "kornia-0.5.10.tar.gz", hash = "sha256:428b4b934a2ba7360cc6cba051ed8fd96c2d0f66611fdca0834e82845f14f65d"},
 ]
 markdown = [
     {file = "Markdown-3.3.4-py3-none-any.whl", hash = "sha256:96c3ba1261de2f7547b46a00ea8463832c921d3f9d6aba3f255a6f71386db20c"},
