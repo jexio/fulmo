@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Iterator
+from typing import Callable, Dict, Iterator, Tuple
 
 import torch
 import torch.nn as nn
@@ -42,10 +42,14 @@ class CriterionMatcher(nn.Module):
 class CriterionWrapper(nn.Module):
     """Wrap all of your criteria."""
 
-    def __init__(self, criterion: nn.ModuleDict, weight: Dict[str, float]) -> None:
+    def __init__(self,
+                 criterion: nn.ModuleDict,
+                 reduction: Callable[[torch.Tensor], torch.Tensor],
+                 weight: Dict[str, float]) -> None:
         """Create a new instance of CriterionWrapper."""
         super().__init__()
         self._criterion = criterion
+        self._reduction = reduction
         self._weight = weight
 
     def __len__(self) -> int:
@@ -65,13 +69,13 @@ class CriterionWrapper(nn.Module):
 
     def forward(
         self, outputs: Dict[str, torch.Tensor], batch: Dict[str, torch.Tensor], stage: Stage = Stage.train
-    ) -> Dict[str, torch.Tensor]:
+    ) -> Tuple[Dict[str, torch.Tensor], torch.Tensor]:
         """Run forward pass."""
         losses = {}
         for key, value in self._criterion.items():
             loss = value(outputs, batch, stage) * self._weight[key]
             losses[key] = loss
-        return losses
+        return losses, self._reduction(torch.stack(list(losses.values())))
 
 
 __all__ = ["CriterionMatcher", "CriterionWrapper"]
