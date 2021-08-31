@@ -65,14 +65,6 @@ optional = false
 python-versions = "*"
 
 [[package]]
-name = "appdirs"
-version = "1.4.4"
-description = "A small Python module for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
-category = "dev"
-optional = false
-python-versions = "*"
-
-[[package]]
 name = "argcomplete"
 version = "1.12.3"
 description = "Bash tab completion for argparse"
@@ -161,23 +153,25 @@ stevedore = ">=1.20.0"
 
 [[package]]
 name = "black"
-version = "21.7b0"
+version = "21.8b0"
 description = "The uncompromising code formatter."
 category = "dev"
 optional = false
 python-versions = ">=3.6.2"
 
 [package.dependencies]
-appdirs = "*"
 click = ">=7.1.2"
 mypy-extensions = ">=0.4.3"
-pathspec = ">=0.8.1,<1"
+pathspec = ">=0.9.0,<1"
+platformdirs = ">=2"
 regex = ">=2020.1.8"
 tomli = ">=0.2.6,<2.0.0"
+typing-extensions = ">=3.10.0.0"
 
 [package.extras]
 colorama = ["colorama (>=0.4.3)"]
 d = ["aiohttp (>=3.6.0)", "aiohttp-cors (>=0.4.0)"]
+jupyter = ["ipython (>=7.8.0)", "tokenize-rt (>=3.2.0)"]
 python2 = ["typed-ast (>=1.4.2)"]
 uvloop = ["uvloop (>=0.15.2)"]
 
@@ -1824,7 +1818,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = "<3.10,>=3.8"
-content-hash = "49858960d48033ad99d6e678c0bea50eb5afbcc7dd85a4b05b60d197071ed6fa"
+content-hash = "04261e38fb9b40a647b5f8afcd0c9218f68877349d56beebf67c0a6ecb3f363f"
 
 [metadata.files]
 absl-py = [
@@ -1881,10 +1875,6 @@ albumentations = [
 antlr4-python3-runtime = [
     {file = "antlr4-python3-runtime-4.8.tar.gz", hash = "sha256:15793f5d0512a372b4e7d2284058ad32ce7dd27126b105fb0b2245130445db33"},
 ]
-appdirs = [
-    {file = "appdirs-1.4.4-py2.py3-none-any.whl", hash = "sha256:a841dacd6b99318a741b166adb07e19ee71a274450e68237b4650ca1055ab128"},
-    {file = "appdirs-1.4.4.tar.gz", hash = "sha256:7d5d0167b2b1ba821647616af46a749d1c653740dd0d2415100fe26e27afdf41"},
-]
 argcomplete = [
     {file = "argcomplete-1.12.3-py2.py3-none-any.whl", hash = "sha256:291f0beca7fd49ce285d2f10e4c1c77e9460cf823eef2de54df0c0fec88b0d81"},
     {file = "argcomplete-1.12.3.tar.gz", hash = "sha256:2c7dbffd8c045ea534921e63b0be6fe65e88599990d8dc408ac8c542b72a5445"},
@@ -1918,8 +1908,8 @@ bandit = [
     {file = "bandit-1.7.0.tar.gz", hash = "sha256:8a4c7415254d75df8ff3c3b15cfe9042ecee628a1e40b44c15a98890fbfc2608"},
 ]
 black = [
-    {file = "black-21.7b0-py3-none-any.whl", hash = "sha256:1c7aa6ada8ee864db745b22790a32f94b2795c253a75d6d9b5e439ff10d23116"},
-    {file = "black-21.7b0.tar.gz", hash = "sha256:c8373c6491de9362e39271630b65b964607bc5c79c83783547d76c839b3aa219"},
+    {file = "black-21.8b0-py3-none-any.whl", hash = "sha256:2a0f9a8c2b2a60dbcf1ccb058842fb22bdbbcb2f32c6cc02d9578f90b92ce8b7"},
+    {file = "black-21.8b0.tar.gz", hash = "sha256:570608d28aa3af1792b98c4a337dbac6367877b47b12b88ab42095cfc1a627c2"},
 ]
 cachetools = [
     {file = "cachetools-4.2.2-py3-none-any.whl", hash = "sha256:2cc0b89715337ab6dbba85b5b50effe2b0c74e035d83ee8ed637cf52f12ae001"},
