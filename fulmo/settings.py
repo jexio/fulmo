@@ -12,7 +12,7 @@ class Stage(str, Enum):
     val = "val"
     test = "test"
 
-    def __eq__(self, other: Union[str, Enum]) -> bool:
+    def __eq__(self, other: Union[str, Enum]) -> bool:  # type: ignore[override]
         other = other.value if isinstance(other, Enum) else str(other)
         return self.value.lower() == other.lower()
 
@@ -27,7 +27,7 @@ class Stage(str, Enum):
         statuses = [status for status in dir(cls) if not status.startswith("_")]
         for st in statuses:
             if st.lower() == value.lower():
-                return getattr(cls, st)
+                return getattr(cls, st)  # type: ignore[no-any-return]
         return None
 
 

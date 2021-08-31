@@ -1,6 +1,7 @@
 from dataclasses import asdict, dataclass
 from typing import Any, Callable, Dict, List, Optional, Union
 
+import torch
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader, Dataset, Sampler
 
@@ -52,7 +53,7 @@ class BaseDataModule(LightningDataModule):
         return self.parameters[Stage.train.value].batch_size
 
     @property
-    def collate_fn(self) -> Optional[Callable]:
+    def collate_fn(self) -> Optional[Callable[[Dict[str, Any]], Dict[str, torch.Tensor]]]:
         """Get collate_fn."""
         return None
 

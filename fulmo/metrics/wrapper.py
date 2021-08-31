@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 
 
-class MetricWrapper(nn.Module):
+class MetricWrapper(nn.Module):  # type: ignore[misc]
     """Wrap all of your metrics."""
 
     def __init__(

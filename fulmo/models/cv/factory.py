@@ -52,10 +52,11 @@ class ImageClassificationModel(BaseModel, nn.Module):
         pool_in_channels = encoder.out_features
         self.backbone: nn.Module = nn.Sequential(*encoder.model.children())
         pool_parameters = pool_parameters if pool_parameters else {}
-        self.pool: nn.Module = SelectAdaptivePool2d(in_channels=pool_in_channels,
-                                                    pool_name=pool_name,
-                                                    **pool_parameters,
-                                                    )
+        self.pool: nn.Module = SelectAdaptivePool2d(
+            in_channels=pool_in_channels,
+            pool_name=pool_name,
+            **pool_parameters,
+        )
         pool_out_channels: int = pool_in_channels * self.pool.multiplication_coefficient
         self.head = Head(
             in_channels=pool_out_channels,

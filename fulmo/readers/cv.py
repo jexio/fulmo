@@ -28,7 +28,7 @@ class ImageReader(IReader):
         self.rootpath = rootpath
         self.grayscale = grayscale
 
-    def __call__(self, element: Dict[str, Any]) -> Dict[str, np.ndarray]:
+    def __call__(self, element: Dict[str, Any]) -> Dict[str, np.typing.NDArray[np.int_]]:
         """Read a row from your annotations dict with filename and  transfer it to an image.
 
         Args:
@@ -67,7 +67,7 @@ class MaskReader(IReader):
         self.rootpath = rootpath
         self.clip = clip_range
 
-    def __call__(self, element: Dict[str, Any]) -> Dict[str, np.ndarray]:
+    def __call__(self, element: Dict[str, Any]) -> Dict[str, np.typing.NDArray[np.int_]]:
         """Reads a row from your annotations dict with filename and transfer it to a mask.
 
         Args:

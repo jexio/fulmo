@@ -13,7 +13,7 @@ def imread(
     expand_dims: bool = True,
     rootpath: Optional[Union[str, pathlib.Path]] = None,
     **kwargs: Any,
-) -> np.ndarray:
+) -> np.typing.NDArray[np.int_]:
     """Reads an image from the specified file.
 
     Args:
@@ -37,7 +37,7 @@ def imread(
         rootpath = str(rootpath)
         uri = uri if uri.startswith(rootpath) else os.path.join(rootpath, uri)
 
-    img: np.ndarray = imageio.imread(uri, as_gray=grayscale, pilmode="RGB", **kwargs)
+    img: np.typing.NDArray[np.int_] = imageio.imread(uri, as_gray=grayscale, pilmode="RGB", **kwargs)
 
     if grayscale:
         img = rgb2gray(img)
@@ -54,7 +54,7 @@ def mimread(
     expand_dims: bool = True,
     rootpath: Optional[Union[str, pathlib.Path]] = None,
     **kwargs: Any,
-) -> np.ndarray:
+) -> np.typing.NDArray[np.int_]:
     """Reads multiple images from the specified file.
 
     Args:
@@ -76,7 +76,7 @@ def mimread(
     if rootpath is not None:
         uri = uri if uri.startswith(str(rootpath)) else os.path.join(rootpath, uri)
 
-    image: Union[Any, np.ndarray] = np.dstack(imageio.mimread(uri, **kwargs))
+    image: Union[Any, np.typing.NDArray[np.int_]] = np.dstack(imageio.mimread(uri, **kwargs))
     if clip_range is not None:
         image = np.clip(image, *clip_range)
 

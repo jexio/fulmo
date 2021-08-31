@@ -1,3 +1,4 @@
+# type: ignore[misc, union-attr]
 from typing import Optional
 
 import pytorch_lightning as pl

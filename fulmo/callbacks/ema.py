@@ -28,7 +28,7 @@ class EmaCallback(BaseCallback):
     def on_train_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
         """Create a new instance of `ModelEma`."""
         super(EmaCallback, self).on_train_start(trainer, pl_module)
-        self.ema = ModelEma(pl_module.model.parameters(), self._decay)
+        self.ema = ModelEma(pl_module.model.parameters(), self._decay)  # type: ignore[arg-type]
 
     def on_before_zero_grad(self, trainer: pl.Trainer, pl_module: pl.LightningModule, optimizer: Optimizer) -> None:
         """Update currently maintained parameters."""

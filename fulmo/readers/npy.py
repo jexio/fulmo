@@ -25,7 +25,7 @@ class NpyReader(IReader):
         super().__init__(input_key, output_key or input_key)
         self.rootpath = rootpath
 
-    def __call__(self, element: Dict[str, Any]) -> Dict[str, np.ndarray]:
+    def __call__(self, element: Dict[str, Any]) -> Dict[str, np.typing.NDArray[Any]]:
         """Read a row from your annotations dict with filename and transfer it to an array.
 
         Args:

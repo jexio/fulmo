@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import numpy as np
 from nptyping import NPType
@@ -36,7 +36,9 @@ class ScalarReader(IReader):
         if one_hot_classes is not None and smoothing is not None:
             assert 0.0 < smoothing < 1.0, f"If smoothing is specified it must be in (0; 1), " f"got {smoothing}"
 
-    def __call__(self, element: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+    def __call__(
+        self, element: Dict[str, np.typing.NDArray[Union[np.int_, np.float_]]]
+    ) -> Dict[str, np.typing.NDArray[Union[np.int_, np.float_]]]:
         """Read a row from your annotations dict and transfer it to a single value.
 
         Args:
@@ -52,7 +54,7 @@ class ScalarReader(IReader):
         return output
 
 
-def get_one_hot(label: int, num_classes: int, smoothing: Optional[float] = None) -> np.ndarray:
+def get_one_hot(label: int, num_classes: int, smoothing: Optional[float] = None) -> np.typing.NDArray[np.float_]:
     """Apply OneHot vectorization to a giving scalar, optional with label smoothing.
 
     Args:

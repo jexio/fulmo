@@ -3,6 +3,9 @@ from typing import Optional, Tuple
 import numpy as np
 
 
+IntegerScalar = np.typing.NDArray[np.int64]
+
+
 def rand_bbox(
     img_shape: Tuple[int, int], lam: float, margin: float = 0.0, count: Optional[int] = None
 ) -> Tuple[int, int, int, int]:
@@ -27,11 +30,11 @@ def rand_bbox(
     cy = np.random.randint(0 + margin_y, img_h - margin_y, size=count)
     cx = np.random.randint(0 + margin_x, img_w - margin_x, size=count)
 
-    yl = np.clip(cy - cut_h // 2, 0, img_h)
-    yh = np.clip(cy + cut_h // 2, 0, img_h)
-    xl = np.clip(cx - cut_w // 2, 0, img_w)
-    xh = np.clip(cx + cut_w // 2, 0, img_w)
-    return xl, yl, xh, yh
+    yl: IntegerScalar = np.clip(cy - cut_h // 2, 0, img_h)
+    yh: IntegerScalar = np.clip(cy + cut_h // 2, 0, img_h)
+    xl: IntegerScalar = np.clip(cx - cut_w // 2, 0, img_w)
+    xh: IntegerScalar = np.clip(cx + cut_w // 2, 0, img_w)
+    return xl.item(), yl.item(), xh.item(), yh.item()
 
 
 def rand_bbox_minmax(
@@ -54,11 +57,11 @@ def rand_bbox_minmax(
     img_h, img_w = img_shape[-2:]
     cut_h = np.random.randint(int(img_h * minmax[0]), int(img_h * minmax[1]), size=count)
     cut_w = np.random.randint(int(img_w * minmax[0]), int(img_w * minmax[1]), size=count)
-    yl: int = np.random.randint(0, img_h - cut_h, size=count)
-    xl: int = np.random.randint(0, img_w - cut_w, size=count)
-    yu: int = yl + cut_h
-    xu: int = xl + cut_w
-    return xl, yl, xu, yu
+    yl = np.random.randint(0, img_h - cut_h, size=count)
+    xl = np.random.randint(0, img_w - cut_w, size=count)
+    yu: IntegerScalar = yl + cut_h
+    xu: IntegerScalar = xl + cut_w
+    return xl.item(), yl.item(), xu.item(), yu.item()
 
 
 def cutmix_bbox_and_lam(

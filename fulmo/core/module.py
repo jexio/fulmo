@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Dict, List, Optional, Sequence, Type, Union, Callable
+from typing import Callable, Dict, List, Optional, Sequence, Type, Union
 
 import hydra
 import torch
@@ -11,9 +11,10 @@ from torch.optim.optimizer import Optimizer
 from ..callbacks.base import BaseCallback
 from ..losses import CriterionMatcher, CriterionWrapper, OnlineLabelSmoothing
 from ..metrics import MetricWrapper
-from ..settings import Stage, logger
 from ..models.utils import freeze_bn, unfreeze_bn
+from ..settings import Stage, logger
 from .exceptions import PipelineCriterionBuildError, PipelineMetricBuildError, PipelineOptimizerBuildError
+
 
 TOptimizer = Dict[str, Union[Optimizer, Dict[str, Union[int, str, _LRScheduler]]]]
 
@@ -85,11 +86,12 @@ class BaseModule(LightningModule):
 
         is_second_step_on = self.config.get("second_forward_backward", None)
         if self.config.optimizer.get("second_optimizer", None) and is_second_step_on is True:
-            raise PipelineOptimizerBuildError("`second_forward_backward` is True "
-                                              "but the second optimizer is not defined.")
+            raise PipelineOptimizerBuildError(
+                "`second_forward_backward` is True " "but the second optimizer is not defined."
+            )
 
         loss_reduction = self.config.get("reduction_func", None)
-        if not isinstance(loss_reduction, Callable):
+        if not isinstance(loss_reduction, Callable):  # type: ignore[arg-type]
             raise PipelineCriterionBuildError("`reduction_func` is not a callable object.")
 
     def _build_metrics(self) -> torch.nn.ModuleDict:
@@ -174,7 +176,7 @@ class BaseModule(LightningModule):
         if stage == Stage.train:
             is_second_step_on = self.config.get("second_forward_backward", None)
             if is_second_step_on and self.config.optimizer.get("second_optimizer", None):
-                optimizer: Optimizer = self.optimizers()
+                optimizer: Optimizer = self.optimizers()  # type: ignore[assignment]
                 self.manual_backward(loss, optimizer)
                 optimizer.first_step(zero_grad=True)
 
@@ -205,14 +207,14 @@ class BaseModule(LightningModule):
         """Post process model outputs."""
         return outputs
 
-    def forward(self, batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+    def forward(self, batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:  # type: ignore[override]
         """Run forward pass."""
         outputs = self.model(**{key: batch[key] for key in self._input_keys})
         if not isinstance(outputs, List):
             outputs = [outputs]
         return {key: outputs[index] for index, key in enumerate(self._output_keys)}
 
-    def training_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
+    def training_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:  # type: ignore[override]
         """Compute and log training losses and some additional metrics.
 
         Args:
@@ -230,7 +232,7 @@ class BaseModule(LightningModule):
             self.log(key, value, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist)
         return output_dict
 
-    def validation_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
+    def validation_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:  # type: ignore[override]
         """Compute validation losses and some additional metrics.
 
         Args:
@@ -248,7 +250,7 @@ class BaseModule(LightningModule):
             self.log(key, value, on_step=False, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist)
         return output_dict
 
-    def test_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
+    def test_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:  # type: ignore[override]
         """Compute and log test losses and some additional metrics.
 
         Args:
@@ -266,7 +268,7 @@ class BaseModule(LightningModule):
             self.log(key, value, on_step=False, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist)
         return output_dict
 
-    def on_train_epoch_end(self, unused: int = None) -> None:
+    def on_train_epoch_end(self, unused: Optional[int] = None) -> None:
         """Called in the training loop at the very end of the epoch."""
         for criterion in self.criterion_wrapper.criterion:
             if isinstance(criterion, OnlineLabelSmoothing):
@@ -290,7 +292,7 @@ class BaseModule(LightningModule):
         if "optimizer_extension" in self.config:
             model_parameters = list()
             per_type: Optional[
-                Dict[Type, Dict[str, Union[Type, Dict[str, float]]]]
+                Dict[str, Dict[str, Union[Type[torch.nn.Module], Dict[str, Union[int, float]]]]]
             ] = self.config.optimizer_extension.get("per_type", None)
 
             for module_name, dict_per_module in self.config.optimizer_extension.per_module.items():
@@ -298,8 +300,8 @@ class BaseModule(LightningModule):
                 module = getattr(self.model, module_name)
                 if per_type:
                     for _, dict_per_type in per_type.items():
-                        dtype: Type = dict_per_type["dtype"]
-                        params_per_type: Dict[str, float] = dict_per_type["params"]
+                        dtype: Type[torch.nn.Module] = dict_per_type["dtype"]  # type: ignore[assignment]
+                        params_per_type: Dict[str, Union[int, float]] = dict_per_type["params"]  # type: ignore[assignment]
                         group_related_to_type = [
                             p for layer in module.children() for p in layer.parameters() if isinstance(layer, dtype)
                         ]
@@ -316,21 +318,23 @@ class BaseModule(LightningModule):
 
         if self.config.optimizer.get("second_optimizer", None) and self.config.get("second_forward_backward", None):
             if "SAM" in self.config.optimizer["second_optimizer"]["_target_"]:
-                optimizer: Optimizer = hydra.utils.instantiate(self.config.optimizer["second_optimizer"],
-                                                               _convert_="partial",
-                                                               params=model_parameters,
-                                                               optimizer=self.config.optimizer["base_optimizer"])
+                optimizer: Optimizer = hydra.utils.instantiate(
+                    self.config.optimizer["second_optimizer"],
+                    _convert_="partial",
+                    params=model_parameters,
+                    optimizer=self.config.optimizer["base_optimizer"],
+                )
             else:
-                base_optimizer: Optimizer = hydra.utils.instantiate(self.config.optimizer["base_optimizer"],
-                                                                    _convert_="partial",
-                                                                    params=model_parameters)
-                optimizer: Optimizer = hydra.utils.instantiate(self.config.optimizer["second_optimizer"],
-                                                               _convert_="partial",
-                                                               optimizer=base_optimizer)
+                base_optimizer: Optimizer = hydra.utils.instantiate(
+                    self.config.optimizer["base_optimizer"], _convert_="partial", params=model_parameters
+                )
+                optimizer = hydra.utils.instantiate(
+                    self.config.optimizer["second_optimizer"], _convert_="partial", optimizer=base_optimizer
+                )
         else:
-            optimizer: Optimizer = hydra.utils.instantiate(self.config.optimizer["base_optimizer"],
-                                                           _convert_="partial",
-                                                           params=model_parameters)
+            optimizer = hydra.utils.instantiate(
+                self.config.optimizer["base_optimizer"], _convert_="partial", params=model_parameters
+            )
 
         if self.config.get("use_lr_scheduler", None):
             scheduler_class = self.config.scheduler["_target_"]

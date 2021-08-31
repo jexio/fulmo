@@ -108,7 +108,9 @@ class MixUpWHCallback(MixUpCallback):
                     self._do_mixup(batch)
         self._current_step += 1
 
-    def on_train_epoch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule, unused: Optional = None) -> None:
+    def on_train_epoch_end(
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule, unused: Optional[int] = None
+    ) -> None:
         """Reset step count."""
         super().on_train_epoch_end(trainer, pl_module, unused)
         self._current_step = 0

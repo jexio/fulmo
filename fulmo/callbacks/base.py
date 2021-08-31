@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 import pytorch_lightning as pl
 from pytorch_lightning import Callback
@@ -40,7 +40,7 @@ class BaseCallback(Callback):
         return self._disable
 
     @property
-    def _state(self) -> Dict:
+    def _state(self) -> Dict[str, Any]:
         """Return current state."""
         return {"disable": self._disable}
 
@@ -53,7 +53,9 @@ class BaseCallback(Callback):
         if trainer.current_epoch == self.apply_on_epoch:
             self._disable = False
 
-    def on_train_epoch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule, unused: Optional = None) -> None:
+    def on_train_epoch_end(
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule, unused: Optional[int] = None
+    ) -> None:
         """Disable any transforms training data."""
         if trainer.current_epoch == self.stop_after_epoch:
             self._disable = True
@@ -81,7 +83,7 @@ class BaseMixCallback(BaseCallback):
         return self._is_mixed
 
     @property
-    def _state(self) -> Dict:
+    def _state(self) -> Dict[str, Any]:
         """Return current state."""
         return {"disable": self._disable, "is_mixed": self._is_mixed}
 

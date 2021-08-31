@@ -52,9 +52,9 @@ class Lookahead(Optimizer):
         return format_string
 
     @property
-    def defaults(self) -> Dict[str, torch.Tensor]:
+    def defaults(self) -> Dict[str, torch.Tensor]:  # type: ignore[override]
         """Get a dict containing default values of optimization."""
-        return self.optimizer.defaults  # type: ignore[no-any-return]
+        return self.optimizer.defaults
 
     def _update(self, group: Dict[str, Any]) -> None:
         """Update a group."""
@@ -81,7 +81,7 @@ class Lookahead(Optimizer):
             if group["counter"] == 0:
                 self._update(group)
             group["counter"] = (group["counter"] + 1) % self.k
-        return loss  # type: ignore[no-any-return]
+        return loss
 
     def state_dict(self) -> State:
         """Return the state of the optimizers as a :class:`dict`.
@@ -123,7 +123,7 @@ class Lookahead(Optimizer):
         self.optimizer.load_state_dict(fast_state_dict)
         self.fast_state = self.optimizer.state
 
-    def zero_grad(self) -> None:
+    def zero_grad(self) -> None:  # type: ignore[override]
         """Clear the gradients of all optimized :class:`torch.Tensor`."""
         self.optimizer.zero_grad()
 
