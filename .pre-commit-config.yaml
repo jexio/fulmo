@@ -16,7 +16,7 @@ repos:
     stages:
     - commit-msg
   repo: https://github.com/commitizen-tools/commitizen
-  rev: master
+  rev: v2.18.0
 - hooks:
   - entry: poetry run mypy
     id: mypy
