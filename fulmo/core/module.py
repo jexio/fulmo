@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Dict, List, Optional, Sequence, Type, Union
+from typing import Callable, Dict, List, Optional, Sequence, Type, Union
 
 import hydra
 import torch
@@ -11,9 +11,9 @@ from torch.optim.optimizer import Optimizer
 from ..callbacks.base import BaseCallback
 from ..losses import CriterionMatcher, CriterionWrapper, OnlineLabelSmoothing
 from ..metrics import MetricWrapper
-from ..optimizers import Lookahead
+from ..models.utils import freeze_bn, unfreeze_bn
 from ..settings import Stage, logger
-from .exceptions import PipelineCriterionBuildError, PipelineMetricBuildError, PipelineStepError
+from .exceptions import PipelineCriterionBuildError, PipelineMetricBuildError, PipelineOptimizerBuildError
 
 
 TOptimizer = Dict[str, Union[Optimizer, Dict[str, Union[int, str, _LRScheduler]]]]
@@ -34,6 +34,7 @@ class BaseModule(LightningModule):
         self.config = config
         self.model: torch.nn.Module = self._build_model()
         self.criterion_wrapper: CriterionWrapper = self._build_criterion()
+        self._check_config()
         self._train_metrics = self._build_metrics()
         self._test_metrics = self._build_metrics()
         self._val_metrics = self._build_metrics()
@@ -43,29 +44,67 @@ class BaseModule(LightningModule):
         self._sync_dist = self.config.get("sync_dist") or False
         OmegaConf.set_struct(self.config, True)
 
-    def _build_metrics(self) -> torch.nn.ModuleDict:
-        """Build metrics.
-
-        Returns:
-            `:class:torch.nn.ModuleDict[str, pl_metrics]`
+    def _check_config(self) -> None:
+        """Check config before start building parts of pipeline.
 
         Raises:
             PipelineMetricBuildError: if `target_key` or `output_key` does not exist
+            PipelineCriterionBuildError: if the number of losses is greater than 1 and
+                the `strategy' is not a `default`. If `target_key` or `output_key` does not exist
+            PipelineOptimizerBuildError: if `second_forward_backward` is True but the second optimizer is not defined.
+            PipelineCriterionBuildError: if `reduction_func` is not a callable object.
         """
-        metrics: Dict[str, MetricWrapper] = {}
         for metric_name, metric_config in self.config["metrics"].items():
             copy_metric_config = deepcopy(metric_config)
             copy_metric_config.pop("wrapper_params")
             wrapper_params = metric_config.get("wrapper_params", None)
             if not wrapper_params:
-                raise PipelineMetricBuildError(f"Wrapper parameters key for metric: {metric_name} does not exist")
+                raise PipelineMetricBuildError(f"Wrapper parameters key for metric: {metric_name} does not exist.")
 
             target_key = wrapper_params.get("target_key", None)
             output_key = wrapper_params.get("output_key", None)
             if not target_key:
-                raise PipelineMetricBuildError(f"Target key for metric: {metric_name} does not exist")
+                raise PipelineMetricBuildError(f"Target key for metric: {metric_name} does not exist.")
             if not output_key:
-                raise PipelineMetricBuildError(f"Output key for metric: {metric_name} does not exist")
+                raise PipelineMetricBuildError(f"Output key for metric: {metric_name} does not exist.")
+
+        for loss_name, loss_config in self.config["losses"].items():
+            copy_loss_config = deepcopy(loss_config)
+            wrapper_params = copy_loss_config.pop("wrapper_params", None)
+            matcher_params = copy_loss_config.pop("matcher_params", None)
+            if not wrapper_params:
+                raise PipelineCriterionBuildError(f"Wrapper parameters key for loss: {loss_name} does not exist.")
+            if not matcher_params:
+                raise PipelineCriterionBuildError(f"Matcher parameters key for loss: {loss_name} does not exist.")
+
+            output_key = matcher_params.get("output_key", None)
+            target_key = matcher_params.get("target_key", None)
+            if not target_key:
+                raise PipelineCriterionBuildError(f"Target key for loss: {loss_name} does not exist.")
+            elif not output_key:
+                raise PipelineCriterionBuildError(f"Output key for loss: {loss_name} does not exist.")
+
+        is_second_step_on = self.config.get("second_forward_backward", None)
+        if self.config.optimizer.get("second_optimizer", None) and is_second_step_on is True:
+            raise PipelineOptimizerBuildError(
+                "`second_forward_backward` is True " "but the second optimizer is not defined."
+            )
+
+        loss_reduction = self.config.get("reduction_func", None)
+        if not isinstance(loss_reduction, Callable):  # type: ignore[arg-type]
+            raise PipelineCriterionBuildError("`reduction_func` is not a callable object.")
+
+    def _build_metrics(self) -> torch.nn.ModuleDict:
+        """Build metrics.
+
+        Returns:
+            `:class:torch.nn.ModuleDict[str, pl_metrics]`
+        """
+        metrics: Dict[str, MetricWrapper] = {}
+        for metric_name, metric_config in self.config["metrics"].items():
+            copy_metric_config = deepcopy(metric_config)
+            copy_metric_config.pop("wrapper_params")
+            wrapper_params = metric_config.get("wrapper_params")
 
             metrics[metric_name] = MetricWrapper(
                 hydra.utils.instantiate(copy_metric_config, _convert_="partial"), **wrapper_params
@@ -85,34 +124,20 @@ class BaseModule(LightningModule):
         """Build criterion from config.
 
         Returns:
-            Wrapper on losses
-
-        Raises:
-            PipelineCriterionBuildError: if the number of losses is greater than 1 and
-                the `strategy' is not a `default`. If `target_key` or `output_key` does not exist
+            Wrapper for losses
         """
         criterion = {}
         weight = {}
         for loss_name, loss_config in self.config["losses"].items():
             copy_loss_config = deepcopy(loss_config)
-            wrapper_params = copy_loss_config.pop("wrapper_params", None)
-            matcher_params = copy_loss_config.pop("matcher_params", None)
-            if not wrapper_params:
-                raise PipelineCriterionBuildError(f"Wrapper parameters key for loss: {loss_name} does not exist")
-            if not matcher_params:
-                raise PipelineCriterionBuildError(f"Matcher parameters key for loss: {loss_name} does not exist")
+            wrapper_params = copy_loss_config.pop("wrapper_params")
+            matcher_params = copy_loss_config.pop("matcher_params")
 
             weight[loss_name] = wrapper_params.get("weight", 1.0)
-            output_key = matcher_params.get("output_key", None)
-            target_key = matcher_params.get("target_key", None)
-            if not target_key:
-                raise PipelineCriterionBuildError(f"Target key for loss: {loss_name} does not exist")
-            elif not output_key:
-                raise PipelineCriterionBuildError(f"Output key for loss: {loss_name} does not exist")
             criterion[loss_name] = CriterionMatcher(hydra.utils.instantiate(copy_loss_config), **matcher_params)
 
         criterion = torch.nn.ModuleDict(modules=criterion)
-        criterion = CriterionWrapper(criterion, weight)
+        criterion = CriterionWrapper(criterion, self.config.get("reduction_func"), weight)
         return criterion
 
     def _compute_metrics(
@@ -144,23 +169,24 @@ class BaseModule(LightningModule):
 
         Returns:
             the losses and some additional metrics
-
-        Raises:
-            PipelineStepError: if something went wrong.
         """
         outputs = self(batch)
         outputs = self._postprocess_outputs(outputs)
-        losses = self.criterion_wrapper(outputs, batch, stage)
-        try:
-            log_dict = self._compute_metrics(outputs, batch, stage)
-        except Exception as e:  # noqa: B902
-            logger.exception(
-                "Error caught in epoch %s",
-                self.trainer.current_epoch,
-                extra={"stage": stage.value, "step": "compute_metrics"},
-            )
-            raise PipelineStepError from e
+        losses, loss = self.criterion_wrapper(outputs, batch, stage)
+        if stage == Stage.train:
+            is_second_step_on = self.config.get("second_forward_backward", None)
+            if is_second_step_on and self.config.optimizer.get("second_optimizer", None):
+                optimizer: Optimizer = self.optimizers()  # type: ignore[assignment]
+                self.manual_backward(loss, optimizer)
+                optimizer.first_step(zero_grad=True)
 
+                freeze_bn(self.model)
+                _, loss_ = self.compute_loss(batch)
+                self.manual_backward(loss_, optimizer)
+                optimizer.second_step(zero_grad=True)
+                unfreeze_bn(self.model)
+
+        log_dict = self._compute_metrics(outputs, batch, stage)
         output_dict = dict()
         for key, value in outputs.items():
             batch[key] = value
@@ -173,32 +199,22 @@ class BaseModule(LightningModule):
             output_dict[f"loss/{key}"] = item
             log_dict[f"{stage.value}/loss/{key}"] = item
 
-        losses = torch.stack(list(losses.values()))
-        loss_reduction = self.config.get("loss_reduction", None)
-        if loss_reduction == "mean":
-            loss = losses.mean()
-        elif loss_reduction == "sum":
-            loss = losses.sum()
-        else:
-            raise PipelineStepError(f"Incorrect loss reduction name: {loss_reduction}")
-
         output_dict["loss"] = loss
         log_dict[f"{stage.value}/loss"] = loss
-
         return {**log_dict, **output_dict}
 
     def _postprocess_outputs(self, outputs: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
         """Post process model outputs."""
         return outputs
 
-    def forward(self, batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+    def forward(self, batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:  # type: ignore[override]
         """Run forward pass."""
         outputs = self.model(**{key: batch[key] for key in self._input_keys})
         if not isinstance(outputs, List):
             outputs = [outputs]
         return {key: outputs[index] for index, key in enumerate(self._output_keys)}
 
-    def training_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
+    def training_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:  # type: ignore[override]
         """Compute and log training losses and some additional metrics.
 
         Args:
@@ -212,10 +228,11 @@ class BaseModule(LightningModule):
         output_dict = self._step(batch, batch_idx, stage)
         log_dict = {key: value for key, value in output_dict.items() if key.startswith(stage.value)}
         output_dict = {key: value for key, value in output_dict.items() if not key.startswith(stage.value)}
-        self.log_dict(log_dict, on_step=True, on_epoch=True, prog_bar=True)
+        for key, value in log_dict.items():
+            self.log(key, value, on_step=True, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist)
         return output_dict
 
-    def validation_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
+    def validation_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:  # type: ignore[override]
         """Compute validation losses and some additional metrics.
 
         Args:
@@ -229,10 +246,11 @@ class BaseModule(LightningModule):
         output_dict = self._step(batch, batch_idx, stage)
         log_dict = {key: value for key, value in output_dict.items() if key.startswith(stage.value)}
         output_dict = {key: value for key, value in output_dict.items() if not key.startswith(stage.value)}
-        self.log_dict(log_dict, on_step=False, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist)
+        for key, value in log_dict.items():
+            self.log(key, value, on_step=False, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist)
         return output_dict
 
-    def test_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
+    def test_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:  # type: ignore[override]
         """Compute and log test losses and some additional metrics.
 
         Args:
@@ -246,10 +264,11 @@ class BaseModule(LightningModule):
         output_dict = self._step(batch, batch_idx, stage)
         log_dict = {key: value for key, value in output_dict.items() if key.startswith(stage.value)}
         output_dict = {key: value for key, value in output_dict.items() if not key.startswith(stage.value)}
-        self.log_dict(log_dict, on_step=False, on_epoch=True)
+        for key, value in log_dict.items():
+            self.log(key, value, on_step=False, on_epoch=True, prog_bar=True, sync_dist=self._sync_dist)
         return output_dict
 
-    def on_train_epoch_end(self, unused: int = None) -> None:
+    def on_train_epoch_end(self, unused: Optional[int] = None) -> None:
         """Called in the training loop at the very end of the epoch."""
         for criterion in self.criterion_wrapper.criterion:
             if isinstance(criterion, OnlineLabelSmoothing):
@@ -270,11 +289,10 @@ class BaseModule(LightningModule):
     ) -> Union[Optimizer, Sequence[Optimizer], TOptimizer, Sequence[TOptimizer], None]:
         """Build optimizers and schedulers from config."""
         model_parameters = self.model.parameters()
-        lookahead: Optional[Dict] = None
         if "optimizer_extension" in self.config:
             model_parameters = list()
             per_type: Optional[
-                Dict[Type, Dict[str, Union[Type, Dict[str, float]]]]
+                Dict[str, Dict[str, Union[Type[torch.nn.Module], Dict[str, Union[int, float]]]]]
             ] = self.config.optimizer_extension.get("per_type", None)
 
             for module_name, dict_per_module in self.config.optimizer_extension.per_module.items():
@@ -282,8 +300,8 @@ class BaseModule(LightningModule):
                 module = getattr(self.model, module_name)
                 if per_type:
                     for _, dict_per_type in per_type.items():
-                        dtype: Type = dict_per_type["dtype"]
-                        params_per_type: Dict[str, float] = dict_per_type["params"]
+                        dtype: Type[torch.nn.Module] = dict_per_type["dtype"]  # type: ignore[assignment]
+                        params_per_type: Dict[str, Union[int, float]] = dict_per_type["params"]  # type: ignore[assignment]
                         group_related_to_type = [
                             p for layer in module.children() for p in layer.parameters() if isinstance(layer, dtype)
                         ]
@@ -297,11 +315,26 @@ class BaseModule(LightningModule):
                 else:
                     model_parameters.append(dict(params=module.parameters(), **params_per_module))
             model_parameters = iter(model_parameters)
-            lookahead = self.config.optimizer_extension.get("lookahead", None)
 
-        optimizer: Optimizer = hydra.utils.instantiate(self.config.optimizer, params=model_parameters)
-        if lookahead:
-            optimizer = Lookahead(optimizer, **lookahead)
+        if self.config.optimizer.get("second_optimizer", None) and self.config.get("second_forward_backward", None):
+            if "SAM" in self.config.optimizer["second_optimizer"]["_target_"]:
+                optimizer: Optimizer = hydra.utils.instantiate(
+                    self.config.optimizer["second_optimizer"],
+                    _convert_="partial",
+                    params=model_parameters,
+                    optimizer=self.config.optimizer["base_optimizer"],
+                )
+            else:
+                base_optimizer: Optimizer = hydra.utils.instantiate(
+                    self.config.optimizer["base_optimizer"], _convert_="partial", params=model_parameters
+                )
+                optimizer = hydra.utils.instantiate(
+                    self.config.optimizer["second_optimizer"], _convert_="partial", optimizer=base_optimizer
+                )
+        else:
+            optimizer = hydra.utils.instantiate(
+                self.config.optimizer["base_optimizer"], _convert_="partial", params=model_parameters
+            )
 
         if self.config.get("use_lr_scheduler", None):
             scheduler_class = self.config.scheduler["_target_"]

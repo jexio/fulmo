@@ -31,7 +31,9 @@ class ScheduledDropoutCallback(BaseCallback):
                 if isinstance(layer, torch.nn.Dropout):
                     self._dropout_rates[layer] = layer.p
 
-    def on_train_epoch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule, unused: Optional = None) -> None:
+    def on_train_epoch_end(
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule, unused: Optional[int] = None
+    ) -> None:
         """Changes dropout value."""
         module = getattr(pl_module.model, self.attr_name)
         if isinstance(module, torch.nn.Sequential):

@@ -14,7 +14,7 @@ class MixUpCallback(BaseMixCallback):
 
     def __init__(
         self,
-        apply_after_epoch: Optional[int] = None,
+        apply_on_epoch: Optional[int] = None,
         stop_after_epoch: Optional[int] = None,
         alpha: float = 1.0,
         probability: float = 1.0,
@@ -22,7 +22,7 @@ class MixUpCallback(BaseMixCallback):
         target_key: str = "target",
     ) -> None:
         """Create a new instance of MixUpCallback."""
-        super(MixUpCallback, self).__init__(apply_after_epoch, stop_after_epoch, input_key, target_key)
+        super(MixUpCallback, self).__init__(apply_on_epoch, stop_after_epoch, input_key, target_key)
         self.alpha = alpha
         self.probability = probability
 
@@ -63,7 +63,7 @@ class MixUpWHCallback(MixUpCallback):
 
     def __init__(
         self,
-        apply_after_epoch: Optional[int] = None,
+        apply_on_epoch: Optional[int] = None,
         stop_after_epoch: Optional[int] = None,
         alpha: float = 1.0,
         probability: float = 1.0,
@@ -72,7 +72,7 @@ class MixUpWHCallback(MixUpCallback):
     ) -> None:
         """Create a new instance of MixUpWHCallback."""
         super(MixUpWHCallback, self).__init__(
-            apply_after_epoch, stop_after_epoch, alpha, probability, input_key, target_key
+            apply_on_epoch, stop_after_epoch, alpha, probability, input_key, target_key
         )
         self._num_batches = 0
         self._current_step = 0
@@ -108,7 +108,9 @@ class MixUpWHCallback(MixUpCallback):
                     self._do_mixup(batch)
         self._current_step += 1
 
-    def on_train_epoch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule, unused: Optional = None) -> None:
+    def on_train_epoch_end(
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule, unused: Optional[int] = None
+    ) -> None:
         """Reset step count."""
         super().on_train_epoch_end(trainer, pl_module, unused)
         self._current_step = 0

@@ -6,6 +6,8 @@ import imageio
 import numpy as np
 from skimage.color import rgb2gray
 
+from ..utils.type_hints import NDArray
+
 
 def imread(
     uri: str,
@@ -13,7 +15,7 @@ def imread(
     expand_dims: bool = True,
     rootpath: Optional[Union[str, pathlib.Path]] = None,
     **kwargs: Any,
-) -> np.ndarray:
+) -> NDArray:
     """Reads an image from the specified file.
 
     Args:
@@ -37,7 +39,7 @@ def imread(
         rootpath = str(rootpath)
         uri = uri if uri.startswith(rootpath) else os.path.join(rootpath, uri)
 
-    img: np.ndarray = imageio.imread(uri, as_gray=grayscale, pilmode="RGB", **kwargs)
+    img: NDArray = imageio.imread(uri, as_gray=grayscale, pilmode="RGB", **kwargs)
 
     if grayscale:
         img = rgb2gray(img)
@@ -54,7 +56,7 @@ def mimread(
     expand_dims: bool = True,
     rootpath: Optional[Union[str, pathlib.Path]] = None,
     **kwargs: Any,
-) -> np.ndarray:
+) -> NDArray:
     """Reads multiple images from the specified file.
 
     Args:
@@ -76,7 +78,7 @@ def mimread(
     if rootpath is not None:
         uri = uri if uri.startswith(str(rootpath)) else os.path.join(rootpath, uri)
 
-    image: Union[Any, np.ndarray] = np.dstack(imageio.mimread(uri, **kwargs))
+    image: Union[Any, NDArray] = np.dstack(imageio.mimread(uri, **kwargs))
     if clip_range is not None:
         image = np.clip(image, *clip_range)
 

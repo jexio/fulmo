@@ -2,6 +2,7 @@ from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 
+from ..utils.type_hints import NDArray
 from .base import IReader
 from .functional import imread, mimread
 
@@ -28,7 +29,7 @@ class ImageReader(IReader):
         self.rootpath = rootpath
         self.grayscale = grayscale
 
-    def __call__(self, element: Dict[str, Any]) -> Dict[str, np.ndarray]:
+    def __call__(self, element: Dict[str, Any]) -> Dict[str, NDArray]:
         """Read a row from your annotations dict with filename and  transfer it to an image.
 
         Args:
@@ -67,7 +68,7 @@ class MaskReader(IReader):
         self.rootpath = rootpath
         self.clip = clip_range
 
-    def __call__(self, element: Dict[str, Any]) -> Dict[str, np.ndarray]:
+    def __call__(self, element: Dict[str, Any]) -> Dict[str, NDArray]:
         """Reads a row from your annotations dict with filename and transfer it to a mask.
 
         Args:

@@ -50,17 +50,18 @@ def extras(config: DictConfig) -> None:
             config.datamodule.pin_memory = False
         if config.datamodule.get("num_workers"):
             config.datamodule.num_workers = 0
+        if config.trainer.get("sync_batchnorm"):
+            config.trainer.sync_batchnorm = False
+        if config.get("callbacks"):
+            for _, cb_conf in config["callbacks"].items():
+                if "_target_" in cb_conf and (cb_conf.get("apply_on_epoch") or cb_conf.get("stop_after_epoch")):
+                    log.info("Change <%s> parameters to default", cb_conf._target_)
+                    cb_conf.apply_on_epoch = 0
+                    cb_conf.stop_after_epoch = -1
+                    if cb_conf.get("probability"):
+                        cb_conf.probability = 1.0
 
-    # force multi-gpu friendly configuration if <config.trainer.accelerator=ddp>
-    accelerator = config.trainer.get("accelerator")
-    if accelerator in ["ddp", "ddp_spawn", "dp", "ddp2"]:
-        log.info("Forcing ddp friendly configuration! <config.trainer.accelerator=%s>", accelerator)
-        if config.datamodule.get("num_workers"):
-            config.datamodule.num_workers = 0
-        if config.datamodule.get("pin_memory"):
-            config.datamodule.pin_memory = False
-
-        # disable adding new keys to config
+    # disable adding new keys to config
     OmegaConf.set_struct(config, True)
 
 
@@ -78,10 +79,6 @@ def log_hyperparameters(
     hparams.update(config["model"])
     if "seed" in config:
         hparams["seed"] = config["seed"]
-    if "strategy" in config:
-        hparams["strategy"] = config["strategy"]
-    if "lr_per_module" in config:
-        hparams["lr_per_module"] = config["lr_per_module"]
     if "optimizer" in config:
         hparams["optimizer"] = config["optimizer"]
     if "scheduler" in config and config.get("use_lr_scheduler", False):

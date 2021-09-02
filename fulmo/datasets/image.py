@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 from ..readers.base import Augmentor
 
 
-class ImageCsvDataset(Dataset):
+class ImageCsvDataset(Dataset):  # type: ignore[misc]
     """Dataset abstraction for the Image case."""
 
     def __init__(

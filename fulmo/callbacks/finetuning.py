@@ -46,7 +46,7 @@ class FreezeUnfreezeBackboneCallback(BackboneFinetuning):
         self,
         unfreeze_backbone_at_epoch: int = 10,
         num_layers: int = -1,
-        lambda_func: Callable = lambda x: 2,
+        lambda_func: Callable[[int], int] = lambda x: 2,
         backbone_initial_ratio_lr: float = 10e-2,
         backbone_initial_lr: Optional[float] = None,
         should_align: bool = True,
@@ -83,7 +83,7 @@ class FreezeUnfreezeBackboneCallback(BackboneFinetuning):
             # restore the param_groups created during the previous training.
             if self._restarting:
                 named_parameters = dict(pl_module.named_parameters())
-                for opt_idx, optimizer in enumerate(trainer.optimizers):
+                for opt_idx, optimizer in enumerate(trainer.optimizers):  # type: ignore[arg-type]
                     param_groups = self.__apply_mapping_to_param_groups(
                         self._internal_optimizer_metadata[opt_idx], named_parameters
                     )

@@ -21,7 +21,7 @@ class LinearLR(_LRScheduler):
         self.num_iter = num_iter
         super(LinearLR, self).__init__(optimizer, last_epoch)
 
-    def get_lr(self) -> List[float]:
+    def get_lr(self) -> List[float]:  # type: ignore[override]
         """Compute learning rate using chainable form of the scheduler."""
         curr_iter = self.last_epoch + 1
         r = curr_iter / self.num_iter

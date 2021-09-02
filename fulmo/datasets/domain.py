@@ -1,3 +1,4 @@
+# type: ignore[misc]
 from typing import Any, Callable, Dict, Optional, Sequence
 
 import pandas as pd
@@ -78,7 +79,7 @@ class MultiDomainCsvDataset(Dataset):
             return list(data[self.target_key])
         return None
 
-    @apply_transforms.setter  # type: ignore
+    @apply_transforms.setter
     def apply_transforms(self, value: bool) -> None:
         """Set `apply_transforms` state."""
         self._apply_transforms = value

@@ -15,7 +15,7 @@ class CutMixCallback(BaseMixCallback):
 
     def __init__(
         self,
-        apply_after_epoch: Optional[int] = None,
+        apply_on_epoch: Optional[int] = None,
         stop_after_epoch: Optional[int] = None,
         alpha: float = 1.0,
         probability: float = 1.0,
@@ -23,7 +23,7 @@ class CutMixCallback(BaseMixCallback):
         target_key: str = "target",
     ) -> None:
         """Create a new instance of CutMixCallback."""
-        super().__init__(apply_after_epoch, stop_after_epoch, input_key, target_key)
+        super().__init__(apply_on_epoch, stop_after_epoch, input_key, target_key)
         self.alpha = alpha
         self.probability = probability
 
@@ -73,7 +73,7 @@ class SegmentationCutMixCallback(CutMixCallback):
 
     def __init__(
         self,
-        apply_after_epoch: Optional[int] = None,
+        apply_on_epoch: Optional[int] = None,
         stop_after_epoch: Optional[int] = None,
         alpha: float = 1.0,
         probability: float = 1.0,
@@ -81,7 +81,7 @@ class SegmentationCutMixCallback(CutMixCallback):
         target_key: str = "target",
     ) -> None:
         """Create a new instance of CutMixCallback."""
-        super().__init__(apply_after_epoch, stop_after_epoch, alpha, probability, input_key, target_key)
+        super().__init__(apply_on_epoch, stop_after_epoch, alpha, probability, input_key, target_key)
 
     def _do_cutmix(self, batch: Dict[str, torch.Tensor], lam: float) -> None:
         """Performs cutmix for segmentation task."""

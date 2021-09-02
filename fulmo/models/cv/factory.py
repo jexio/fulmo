@@ -21,6 +21,7 @@ class ImageClassificationModel(BaseModel, nn.Module):
         pretrained: bool = False,
         in_channels: int = 3,
         pool_name: str = "avg",
+        pool_parameters: Optional[Dict[str, Union[float, int]]] = None,
         num_layers: int = 1,
         dropout_head: float = 0.0,
         activation_head_name: str = "relu",
@@ -35,6 +36,7 @@ class ImageClassificationModel(BaseModel, nn.Module):
             pretrained: load pretrained weights if true
             in_channels: number of input channels for backbone
             pool_name: name of pooling to instantiate
+            pool_parameters: specific parameters for the selected pool type
             num_layers: number of block except the last fc with following layers
             dropout_head: append "Dropout" or not.
             activation_head_name: name of activation
@@ -49,7 +51,12 @@ class ImageClassificationModel(BaseModel, nn.Module):
         encoder = Encoder(backbone, pretrained=pretrained, in_channels=in_channels)
         pool_in_channels = encoder.out_features
         self.backbone: nn.Module = nn.Sequential(*encoder.model.children())
-        self.pool: nn.Module = SelectAdaptivePool2d(in_channels=pool_in_channels, pool_name=pool_name)
+        pool_parameters = pool_parameters if pool_parameters else {}
+        self.pool: nn.Module = SelectAdaptivePool2d(
+            in_channels=pool_in_channels,
+            pool_name=pool_name,
+            **pool_parameters,
+        )
         pool_out_channels: int = pool_in_channels * self.pool.multiplication_coefficient
         self.head = Head(
             in_channels=pool_out_channels,
@@ -109,6 +116,7 @@ class ImageClassificationModelExtendsKornia(ImageClassificationModel):
         pretrained: bool = False,
         in_channels: int = 3,
         pool_name: str = "avg",
+        pool_parameters: Optional[Dict[str, Union[float, int]]] = None,
         num_layers: int = 1,
         dropout_head: float = 0.0,
         activation_head_name: str = "relu",
@@ -123,6 +131,7 @@ class ImageClassificationModelExtendsKornia(ImageClassificationModel):
             backbone: name of models to instantiate
             in_channels: number of input channels for backbone
             pool_name: name of pooling to instantiate
+            pool_parameters: specific parameters for the selected pool type
             num_layers: number of block except the last fc with following layers
             dropout_head: append "Dropout" or not.
             activation_head_name: name of activation
@@ -136,6 +145,7 @@ class ImageClassificationModelExtendsKornia(ImageClassificationModel):
             pretrained,
             in_channels,
             pool_name,
+            pool_parameters,
             num_layers,
             dropout_head,
             activation_head_name,

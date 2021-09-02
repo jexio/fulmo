@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Iterator
+from typing import Callable, Dict, Iterator, Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -12,11 +12,15 @@ _criterion_strategy: Dict[str, Callable[[nn.Module, torch.Tensor, Dict[str, torc
 }
 
 
-class CriterionMatcher(nn.Module):
+class CriterionMatcher(nn.Module):  # type: ignore[misc]
     """Match your outputs with your target here."""
 
     def __init__(
-        self, criterion: nn.Module, output_key: str = "logits", target_key: str = "target", mix_strategy: str = None
+        self,
+        criterion: nn.Module,
+        output_key: str = "logits",
+        target_key: str = "target",
+        mix_strategy: Optional[str] = None,
     ) -> None:
         """Create a new instance of CriterionMatcher."""
         super().__init__()
@@ -39,13 +43,16 @@ class CriterionMatcher(nn.Module):
         return self.criterion(outputs[self.output_key], batch[self.target_key])
 
 
-class CriterionWrapper(nn.Module):
+class CriterionWrapper(nn.Module):  # type: ignore[misc]
     """Wrap all of your criteria."""
 
-    def __init__(self, criterion: nn.ModuleDict, weight: Dict[str, float]) -> None:
+    def __init__(
+        self, criterion: nn.ModuleDict, reduction: Callable[[torch.Tensor], torch.Tensor], weight: Dict[str, float]
+    ) -> None:
         """Create a new instance of CriterionWrapper."""
         super().__init__()
         self._criterion = criterion
+        self._reduction = reduction
         self._weight = weight
 
     def __len__(self) -> int:
@@ -65,13 +72,13 @@ class CriterionWrapper(nn.Module):
 
     def forward(
         self, outputs: Dict[str, torch.Tensor], batch: Dict[str, torch.Tensor], stage: Stage = Stage.train
-    ) -> Dict[str, torch.Tensor]:
+    ) -> Tuple[Dict[str, torch.Tensor], torch.Tensor]:
         """Run forward pass."""
         losses = {}
         for key, value in self._criterion.items():
             loss = value(outputs, batch, stage) * self._weight[key]
             losses[key] = loss
-        return losses
+        return losses, self._reduction(torch.stack(list(losses.values())))
 
 
 __all__ = ["CriterionMatcher", "CriterionWrapper"]
