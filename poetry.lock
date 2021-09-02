@@ -1659,7 +1659,7 @@ torch = ">=1.1.0"
 
 [[package]]
 name = "torchmetrics"
-version = "0.5.0"
+version = "0.5.1"
 description = "PyTorch native Metrics"
 category = "main"
 optional = false
@@ -1671,9 +1671,9 @@ packaging = "*"
 torch = ">=1.3.1"
 
 [package.extras]
-all = ["scipy", "torchvision", "torch-fidelity", "jiwer (>=2.2.0)", "nltk (>=3.6)", "rouge-score (>=0.0.4)", "bert-score (==0.3.10)"]
+all = ["scipy", "torchvision", "torch-fidelity", "nltk (>=3.6)", "tqdm (>=4.41.0)"]
 image = ["scipy", "torchvision", "torch-fidelity"]
-text = ["jiwer (>=2.2.0)", "nltk (>=3.6)", "rouge-score (>=0.0.4)", "bert-score (==0.3.10)"]
+text = ["nltk (>=3.6)", "tqdm (>=4.41.0)"]
 
 [[package]]
 name = "torchvision"
@@ -2951,8 +2951,8 @@ torch-optimizer = [
     {file = "torch_optimizer-0.1.0-py3-none-any.whl", hash = "sha256:b7adaed38b66a5c5105a59b30a71c4ab7c9954baf0acabd969fee3dac954657d"},
 ]
 torchmetrics = [
-    {file = "torchmetrics-0.5.0-py3-none-any.whl", hash = "sha256:5c6cfacbc127f53ae37c563d802a1dbfe5132e99865048c2bf5e1878e2a126d0"},
-    {file = "torchmetrics-0.5.0.tar.gz", hash = "sha256:b03e348a386d8e96a52695d37943ab279a8912ef2c4002770be68b97cab855d9"},
+    {file = "torchmetrics-0.5.1-py3-none-any.whl", hash = "sha256:4e5497bc5c9d19fa520748cda89f6d863868bb5be33ec47d2834c0988bf737c5"},
+    {file = "torchmetrics-0.5.1.tar.gz", hash = "sha256:22fbcb6fc05348ca3f2bd06e0763e88411a6b68c2b9fc26084b39d40cc4021b0"},
 ]
 torchvision = [
     {file = "torchvision-0.10.0-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:f26c5ba220445ee8e892033234485c9276304874e87ec9d5146779167be3148d"},
