@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fulmo"
-version = "0.3.1"
+version = "0.3.2"
 description = "Template to start your deep learning project based on `PyTorchLightning` for rapid prototyping."
 authors = ["Gleb Glushkov <ptjexio@gmail.com>"]
 
@@ -121,7 +121,7 @@ norecursedirs = ["*.egg", ".eggs", "dist", "build", "docs", ".tox", ".git __pyca
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.3.1"
+version = "0.3.2"
 tag_format = "v$version"
 version_files = [
     "fulmo/__version__.py",
