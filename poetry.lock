@@ -482,7 +482,7 @@ dev = ["dlint", "flake8-2020", "flake8-aaa", "flake8-absolute-import", "flake8-a
 
 [[package]]
 name = "fsspec"
-version = "2021.7.0"
+version = "2021.8.1"
 description = "File-system specification"
 category = "main"
 optional = false
@@ -1151,7 +1151,7 @@ cli = ["click (>=5.0)"]
 
 [[package]]
 name = "pytorch-lightning"
-version = "1.4.4"
+version = "1.4.5"
 description = "PyTorch Lightning is the lightweight PyTorch wrapper for ML researchers. Scale your models. Write less boilerplate."
 category = "main"
 optional = false
@@ -1818,7 +1818,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = "<3.10,>=3.8"
-content-hash = "45134bdb398bff24bc0f7562a00a434a84af92804a3f147dda84a4ca9ded2e9a"
+content-hash = "57c9879b2039d5a310cce751b85489ed64f5f99e0414fa885c2987f9db2887d6"
 
 [metadata.files]
 absl-py = [
@@ -2020,8 +2020,8 @@ flakehell = [
     {file = "flakehell-0.9.0.tar.gz", hash = "sha256:208836d8d24194d50cfa4c1fc99f681f3c537cc232edcd06455abc2971460893"},
 ]
 fsspec = [
-    {file = "fsspec-2021.7.0-py3-none-any.whl", hash = "sha256:86822ccf367da99957f49db64f7d5fd3d8d21444fac4dfdc8ebc38ee93d478c6"},
-    {file = "fsspec-2021.7.0.tar.gz", hash = "sha256:792ebd3b54de0b30f1ce73f0ba0a8bcc864724f2d9f248cb8d0ece47db0cbde8"},
+    {file = "fsspec-2021.8.1-py3-none-any.whl", hash = "sha256:30f27c059a414d1f434b14b2d0e75c8d9c3dd473ad8daeccb444d9d4069b9f03"},
+    {file = "fsspec-2021.8.1.tar.gz", hash = "sha256:af125917788b77782899bbd4484d29e5407f53d2bb04cdfa025fe4931201a555"},
 ]
 future = [
     {file = "future-0.18.2.tar.gz", hash = "sha256:b1bead90b70cf6ec3f0710ae53a525360fa360d306a86583adc6bf83a4db537d"},
@@ -2616,8 +2616,8 @@ python-dotenv = [
     {file = "python_dotenv-0.19.0-py2.py3-none-any.whl", hash = "sha256:aae25dc1ebe97c420f50b81fb0e5c949659af713f31fdb63c749ca68748f34b1"},
 ]
 pytorch-lightning = [
-    {file = "pytorch-lightning-1.4.4.tar.gz", hash = "sha256:8c911893dba48525421a4813fa72879e8046abbb207aa1904b57fde5b25de60d"},
-    {file = "pytorch_lightning-1.4.4-py3-none-any.whl", hash = "sha256:384a7de46fc43c419fb366af7009b74cf52a29a13699b3ecc7583279870c698b"},
+    {file = "pytorch-lightning-1.4.5.tar.gz", hash = "sha256:524eca14edcee055d04de537caa2924de36dec4b3f4a2d9d0e35fb944b8ab6aa"},
+    {file = "pytorch_lightning-1.4.5-py3-none-any.whl", hash = "sha256:bc152d6ff01dbfd4499a9b4df06ad1e1d480e9a9a1973c96f7985e65af0feb3c"},
 ]
 pytorch-ranger = [
     {file = "pytorch_ranger-0.1.1-py3-none-any.whl", hash = "sha256:1e69156c9cc8439185cb8ba4725b18c91947fbe72743e25aca937da8aeb0c8ec"},
