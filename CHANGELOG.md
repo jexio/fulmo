@@ -5,6 +5,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.3.2] - 2021-09-02
+
+### Refactor
+
+- **checker**: add mypy stubs
+- **logging**: changing parameters of described objects in the config for debug stage
+- **wrapper**: move the reduction function from the `BaseModule' to the loss wrapper
+- **callback**: rename `apply_after_epoch` to `apply_on_epoch`
+
+### Feat
+
+- **checker**: add static check for the whole project in pre-commit-config
+- **core**: add an unfreezing function for batch normalization layers
+- **core**: add support for two-step optimizers
+- **core**: check the config before starting the pipeline
+
+### Fix
+
+- **model**: add `pool_parameters`
+- **model**: turn on bias in the last layer if batch normalization is off
+
 ## [0.3.1] - 2021-08-17
 
 ### Fix
@@ -34,5 +55,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **reader**: `NpyReader`
 - **ci**: First release on PyPI.
 
-[Unreleased]: https://github.com/jexio/fulmo/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/jexio/fulmo/compare/v0.3.2...develop
+[0.3.2]: https://github.com/jexio/fulmo/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/jexio/fulmo/compare/releases/tag/v0.3.1
