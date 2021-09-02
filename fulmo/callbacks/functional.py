@@ -2,8 +2,7 @@ from typing import Optional, Tuple
 
 import numpy as np
 
-
-IntegerScalar = np.typing.NDArray[np.int64]
+from ..utils.type_hints import IntegerScalar
 
 
 def rand_bbox(

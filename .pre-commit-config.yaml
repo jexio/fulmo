@@ -1,73 +1,60 @@
 default_language_version:
   python: python3.8
-default_stages:
-- commit
-- push
+
+default_stages: ["commit", "push"]
+
 repos:
-- hooks:
-  - id: check-toml
-  - id: check-yaml
-  - id: check-merge-conflict
-  - id: end-of-file-fixer
-  repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.0.1
-- hooks:
-  - id: commitizen
-    stages:
-    - commit-msg
-  repo: https://github.com/commitizen-tools/commitizen
-  rev: v2.18.0
-- hooks:
-  - entry: poetry run mypy
-    id: mypy
-    language: python
-    name: mypy
-    types:
-    - python3
-  repo: local
-- hooks:
-  - entry: poetry run isort
-    id: isort
-    language: python
-    name: isort
-    types:
-    - python3
-  repo: local
-- hooks:
-  - entry: poetry run black
-    id: black
-    language: python
-    name: black
-    types:
-    - python3
-  repo: local
-- hooks:
-  - entry: poetry run interrogate
-    id: interrogate
-    language: python
-    name: interrogate
-    types:
-    - python3
-  repo: local
-- hooks:
-  - additional_dependencies:
-    - flake8~=3.9.2
-    - flakehell~=0.9.0
-    - flake8-builtins~=1.5.3
-    - flake8-blind-except~=0.2.0
-    - flake8-logging-format~=0.6.0
-    - flake8-bugbear~=21.4.3
-    - flake8-annotations~=2.6.2
-    - flake8-docstrings~=1.6.0
-    - flake8-bandit~=2.1.2
-    - flake8-class-attributes-order~=0.1.2
-    - darglint~=1.8.0
-    description: '`Flakehell` it''s a Flake8 wrapper to make it cools.'
-    entry: poetry run flakehell lint
-    id: flakehell
-    language: python
-    name: flakehell
-    require_serial: true
-    types:
-    - python3
-  repo: local
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.0.1
+    hooks:
+      - id: check-toml
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: master
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
+
+  - repo: https://github.com/timothycrosley/isort
+    rev: 5.9.3
+    hooks:
+      - id: isort
+
+  - repo: https://github.com/psf/black
+    rev: 21.8b0
+    hooks:
+      - id: black
+
+  - repo: https://github.com/econchick/interrogate
+    rev: master
+    hooks:
+      - id: interrogate
+        args: [ -vv, --config=pyproject.toml ]
+        pass_filenames: false
+
+  - repo: local
+    hooks:
+      - id: flakehell
+        name: flakehell
+        description: "`Flakehell` it's a Flake8 wrapper to make it cools."
+        entry: flakehell
+        args: [lint]
+        language: python
+        types: [python]
+        require_serial: true
+        additional_dependencies: [
+            "flake8~=3.9.2",
+            "flakehell~=0.9.0",
+            "flake8-builtins~=1.5.3",
+            "flake8-blind-except~=0.2.0",
+            "flake8-logging-format~=0.6.0",
+            "flake8-bugbear~=21.4.3",
+            "flake8-annotations~=2.6.2",
+            "flake8-docstrings~=1.6.0",
+            "flake8-bandit~=2.1.2",
+            "flake8-class-attributes-order~=0.1.2",
+            "darglint~=1.8.0"
+        ]
