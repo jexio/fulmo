@@ -62,7 +62,7 @@ mypy = "^0.910"
 recommonmark = "^0.7.1"
 pytest = "^6.2.5"
 watchdog = {version = "^2.1.5", extras = ["watchmedo"]}
-commitizen = "^2.17.13"
+commitizen = "^2.18.1"
 
 [tool.flakehell]
 application-import-names = "fulmo"
