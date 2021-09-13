@@ -239,7 +239,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
 name = "commitizen"
-version = "2.18.0"
+version = "2.18.1"
 description = "Python commitizen client tool"
 category = "dev"
 optional = false
@@ -1819,7 +1819,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = "<3.10,>=3.8"
-content-hash = "57c9879b2039d5a310cce751b85489ed64f5f99e0414fa885c2987f9db2887d6"
+content-hash = "051996d92e40d8781e89a4106d0c2abb43828f18db0036c7bcbec63536c141a6"
 
 [metadata.files]
 absl-py = [
@@ -1941,8 +1941,8 @@ colorama = [
     {file = "colorama-0.4.4.tar.gz", hash = "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"},
 ]
 commitizen = [
-    {file = "commitizen-2.18.0-py3-none-any.whl", hash = "sha256:3a8d9a90aca987708a474ff2fdfa619e07c5340f6d1cca4421d3516c78db1c1e"},
-    {file = "commitizen-2.18.0.tar.gz", hash = "sha256:f24a22eb6734e1791046e817dff72505b515e9a1f282577a82423cf7563201d7"},
+    {file = "commitizen-2.18.1-py3-none-any.whl", hash = "sha256:9cbf01b95b19296f75f9c94dadfff9000742ea3d197ef6b7bbc4ea2ba2b73bba"},
+    {file = "commitizen-2.18.1.tar.gz", hash = "sha256:76b83d2e0f00e5aeef823dd8d4b289c92da980cb4233065f4a8c59bf3078ef18"},
 ]
 commonmark = [
     {file = "commonmark-0.9.1-py2.py3-none-any.whl", hash = "sha256:da2f38c92590f83de410ba1a3cbceafbc74fee9def35f9251ba9a971d6d66fd9"},
