@@ -856,7 +856,7 @@ python-versions = "*"
 
 [[package]]
 name = "nptyping"
-version = "1.4.3"
+version = "1.4.4"
 description = "Type hints for Numpy."
 category = "main"
 optional = false
@@ -2352,7 +2352,7 @@ nodeenv = [
     {file = "nodeenv-1.6.0.tar.gz", hash = "sha256:3ef13ff90291ba2a4a7a4ff9a979b63ffdd00a464dbe04acf0ea6471517a4c2b"},
 ]
 nptyping = [
-    {file = "nptyping-1.4.3-py3-none-any.whl", hash = "sha256:5631e9f767fcae2541a121baeb4482f7649bc52d26ff1fb2d85da21c8bb61a37"},
+    {file = "nptyping-1.4.4-py3-none-any.whl", hash = "sha256:8128473b8ba0e65f3d6edc727cd99024e162edcf7e8a0ea8f9dfa6b070934d14"},
 ]
 numpy = [
     {file = "numpy-1.21.2-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:52a664323273c08f3b473548bf87c8145b7513afd63e4ebba8496ecd3853df13"},
