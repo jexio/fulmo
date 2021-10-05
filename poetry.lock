@@ -390,7 +390,7 @@ python-versions = "*"
 
 [[package]]
 name = "flake8-bugbear"
-version = "21.9.1"
+version = "21.9.2"
 description = "A plugin for flake8 finding likely bugs and design problems in your program. Contains warnings that don't belong in pyflakes and pycodestyle."
 category = "dev"
 optional = false
@@ -482,7 +482,7 @@ dev = ["dlint", "flake8-2020", "flake8-aaa", "flake8-absolute-import", "flake8-a
 
 [[package]]
 name = "fsspec"
-version = "2021.8.1"
+version = "2021.10.0"
 description = "File-system specification"
 category = "main"
 optional = false
@@ -495,15 +495,20 @@ requests = {version = "*", optional = true, markers = "extra == \"http\""}
 [package.extras]
 abfs = ["adlfs"]
 adl = ["adlfs"]
+arrow = ["pyarrow (>=1)"]
 dask = ["dask", "distributed"]
 dropbox = ["dropboxdrivefs", "requests", "dropbox"]
 entrypoints = ["importlib-metadata"]
+fuse = ["fusepy"]
 gcs = ["gcsfs"]
 git = ["pygit2"]
 github = ["requests"]
 gs = ["gcsfs"]
+gui = ["panel"]
 hdfs = ["pyarrow (>=1)"]
 http = ["requests", "aiohttp"]
+libarchive = ["libarchive-c"]
+oci = ["ocifs"]
 s3 = ["s3fs"]
 sftp = ["paramiko"]
 smb = ["smbprotocol"]
@@ -1817,7 +1822,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = "<3.10,>=3.8"
-content-hash = "c7503bdf4b7f10647e851d05940144c702c7d9080315348d857b51704fe13af5"
+content-hash = "36364b4dc6319d1dcda6ceb519ea9b97490c38cf711fd457a4295eecd0480dda"
 
 [metadata.files]
 absl-py = [
@@ -1993,8 +1998,8 @@ flake8-blind-except = [
     {file = "flake8-blind-except-0.2.0.tar.gz", hash = "sha256:02a860a1a19cb602c006a3fe0778035b0d14d3f57929b4b798bc7d6684f204e5"},
 ]
 flake8-bugbear = [
-    {file = "flake8-bugbear-21.9.1.tar.gz", hash = "sha256:2f60c8ce0dc53d51da119faab2d67dea978227f0f92ed3c44eb7d65fb2e06a96"},
-    {file = "flake8_bugbear-21.9.1-py36.py37.py38-none-any.whl", hash = "sha256:45bfdccfb9f2d8aa140e33cac8f46f1e38215c13d5aa8650e7e188d84e2f94c6"},
+    {file = "flake8-bugbear-21.9.2.tar.gz", hash = "sha256:db9a09893a6c649a197f5350755100bb1dd84f110e60cf532fdfa07e41808ab2"},
+    {file = "flake8_bugbear-21.9.2-py36.py37.py38-none-any.whl", hash = "sha256:4f7eaa6f05b7d7ea4cbbde93f7bcdc5438e79320fa1ec420d860c181af38b769"},
 ]
 flake8-builtins = [
     {file = "flake8-builtins-1.5.3.tar.gz", hash = "sha256:09998853b2405e98e61d2ff3027c47033adbdc17f9fe44ca58443d876eb00f3b"},
@@ -2019,8 +2024,8 @@ flakehell = [
     {file = "flakehell-0.9.0.tar.gz", hash = "sha256:208836d8d24194d50cfa4c1fc99f681f3c537cc232edcd06455abc2971460893"},
 ]
 fsspec = [
-    {file = "fsspec-2021.8.1-py3-none-any.whl", hash = "sha256:30f27c059a414d1f434b14b2d0e75c8d9c3dd473ad8daeccb444d9d4069b9f03"},
-    {file = "fsspec-2021.8.1.tar.gz", hash = "sha256:af125917788b77782899bbd4484d29e5407f53d2bb04cdfa025fe4931201a555"},
+    {file = "fsspec-2021.10.0-py3-none-any.whl", hash = "sha256:7760d6b2f35739697d694c724be3500b19e6b33af65b139306be98bb1d1ebcdd"},
+    {file = "fsspec-2021.10.0.tar.gz", hash = "sha256:9505afbf8cee22cf12a29742e23ad79ad132b3423632ec3a3bf9034ce3911138"},
 ]
 future = [
     {file = "future-0.18.2.tar.gz", hash = "sha256:b1bead90b70cf6ec3f0710ae53a525360fa360d306a86583adc6bf83a4db537d"},
