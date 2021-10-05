@@ -1596,7 +1596,7 @@ python-versions = "*"
 
 [[package]]
 name = "threadpoolctl"
-version = "2.2.0"
+version = "3.0.0"
 description = "threadpoolctl"
 category = "main"
 optional = false
@@ -2955,8 +2955,8 @@ termcolor = [
     {file = "termcolor-1.1.0.tar.gz", hash = "sha256:1d6d69ce66211143803fbc56652b41d73b4a400a2891d7bf7a1cdf4c02de613b"},
 ]
 threadpoolctl = [
-    {file = "threadpoolctl-2.2.0-py3-none-any.whl", hash = "sha256:e5a995e3ffae202758fa8a90082e35783b9370699627ae2733cd1c3a73553616"},
-    {file = "threadpoolctl-2.2.0.tar.gz", hash = "sha256:86d4b6801456d780e94681d155779058759eaef3c3564758b17b6c99db5f81cb"},
+    {file = "threadpoolctl-3.0.0-py3-none-any.whl", hash = "sha256:4fade5b3b48ae4b1c30f200b28f39180371104fccc642e039e0f2435ec8cc211"},
+    {file = "threadpoolctl-3.0.0.tar.gz", hash = "sha256:d03115321233d0be715f0d3a5ad1d6c065fe425ddc2d671ca8e45e9fd5d7a52a"},
 ]
 tifffile = [
     {file = "tifffile-2021.8.30-py3-none-any.whl", hash = "sha256:524f9f3a96ca91d12e5b5ddce80209d2b07769c1764ceecf505613668143f63c"},
