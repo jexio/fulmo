@@ -61,7 +61,7 @@ safety = "^1.10.3"
 mypy = "^0.910"
 recommonmark = "^0.7.1"
 pytest = "^6.2.5"
-watchdog = {version = "^2.1.5", extras = ["watchmedo"]}
+watchdog = {version = "^2.1.6", extras = ["watchmedo"]}
 commitizen = "^2.19.0"
 
 [tool.flakehell]
