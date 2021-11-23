@@ -13,16 +13,18 @@ class BaseDataModuleParameters:
     """Base parameters."""
 
     batch_size: int = 1
-    num_workers: int = 1
+    shuffle: bool = False
+    num_workers: int = 0
     pin_memory: bool = False
     drop_last: bool = False
+    timeout: int = 0
+    prefetch_factor: int = 2
+    persistent_workers: bool = False
 
     @classmethod
     def from_config(cls, parameters: Dict[str, Any]) -> "BaseDataModuleParameters":
         """Create a new instance of `BaseDataModuleParameters` from `Dict`"""
-        return cls(
-            parameters["batch_size"], parameters["num_workers"], parameters["pin_memory"], parameters["drop_last"]
-        )
+        return cls(**parameters)
 
 
 class BaseDataModule(LightningDataModule):
@@ -31,15 +33,14 @@ class BaseDataModule(LightningDataModule):
     def __init__(
         self,
         data_dir: str,
-        parameters: Union[BaseDataModuleParameters, Dict[str, BaseDataModuleParameters]],
-        sampler: Sampler[int] = None,
+        parameters: Dict[str, BaseDataModuleParameters],
     ) -> None:
         """Create a new instance of BaseDataModule."""
         super().__init__()
         self.data_dir = data_dir
         self.parameters = parameters
         self._labels: Optional[List[str]] = None
-        self.sampler: Optional[Sampler[int]] = sampler
+        self.sampler: Optional[Sampler[int]] = None
         self.data_train: Optional[Dataset] = None
         self.data_val: Optional[Dataset] = None
         self.data_test: Optional[Dataset] = None
@@ -64,10 +65,7 @@ class BaseDataModule(LightningDataModule):
 
     def _get_parameters(self, stage: Stage) -> Dict[str, Union[int, bool, float]]:
         """Get dataloader parameters."""
-        if isinstance(self.parameters, BaseDataModuleParameters):
-            dict_ = asdict(self.parameters)
-        else:
-            dict_ = asdict(self.parameters[stage.value])
+        dict_ = asdict(self.parameters[stage.value])
         return dict_
 
     def prepare_data(self) -> None:
@@ -77,6 +75,10 @@ class BaseDataModule(LightningDataModule):
             NotImplementedError: if `__class__` is "BaseDataModule"
         """
         raise NotImplementedError("Implement in child.")
+
+    def set_sampler(self, sampler: Sampler[int]) -> None:
+        """Set sampler."""
+        self.sampler = sampler
 
     def setup(self, stage: Optional[str] = None) -> None:
         """Load data. Set variables: data_train, data_val, data_test.
@@ -91,33 +93,27 @@ class BaseDataModule(LightningDataModule):
 
     def train_dataloader(self) -> DataLoader:
         """Create dataloader for train stage."""
-        shuffle = True if not self.sampler else False
         return DataLoader(
             dataset=self.data_train,
             collate_fn=self.collate_fn,
             sampler=self.sampler,
-            shuffle=shuffle,
             **self._get_parameters(Stage.train),
         )
 
     def val_dataloader(self) -> DataLoader:
         """Create dataloader for valid stage."""
-        return DataLoader(
-            dataset=self.data_val, collate_fn=self.collate_fn, shuffle=False, **self._get_parameters(Stage.val)
-        )
+        return DataLoader(dataset=self.data_val, collate_fn=self.collate_fn, **self._get_parameters(Stage.val))
 
-    def test_dataloader(self) -> DataLoader:
+    def test_dataloader(self) -> Optional[DataLoader]:
         """Create dataloader for test stage."""
         if self.data_test:
-            return DataLoader(
-                dataset=self.data_test, collate_fn=self.collate_fn, shuffle=False, **self._get_parameters(Stage.test)
-            )
+            return DataLoader(dataset=self.data_test, collate_fn=self.collate_fn, **self._get_parameters(Stage.test))
 
-    def predict_dataloader(self) -> DataLoader:
+    def predict_dataloader(self) -> Optional[DataLoader]:
         """Create dataloader for predict stage."""
         if self.data_predict:
             return DataLoader(
-                dataset=self.data_predict, collate_fn=self.collate_fn, shuffle=False, **self._get_parameters(Stage.val)
+                dataset=self.data_predict, collate_fn=self.collate_fn, **self._get_parameters(Stage.predict)
             )
 
 
