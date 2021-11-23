@@ -1,5 +1,6 @@
 import logging
 import warnings
+from typing import List
 
 import pytorch_lightning as pl
 from omegaconf import DictConfig, OmegaConf
@@ -34,11 +35,6 @@ def extras(config: DictConfig) -> None:
     if config.get("ignore_warnings"):
         log.info("Disabling python warnings! <config.ignore_warnings=True>")
         warnings.filterwarnings("ignore")
-
-    # set <config.trainer.fast_dev_run=True> if <config.debug=True>
-    if config.get("debug"):
-        log.info("Running in debug mode! <config.debug=True>")
-        config.trainer.fast_dev_run = True
 
     # force debugger friendly configuration if <config.trainer.fast_dev_run=True>
     if config.trainer.get("fast_dev_run"):
@@ -108,4 +104,21 @@ def log_hyperparameters(
     trainer.logger.log_hyperparams = lambda x: None
 
 
-__all__ = ["get_logger", "extras", "log_hyperparameters"]
+def finish(
+    config: DictConfig,
+    model: pl.LightningModule,
+    datamodule: pl.LightningDataModule,
+    trainer: pl.Trainer,
+    callbacks: List[pl.Callback],
+    logger: List[pl.loggers.LightningLoggerBase],
+) -> None:
+    """Makes sure everything closed properly."""
+    # without this sweeps with wandb logger might crash!
+    for lg in logger:
+        if isinstance(lg, pl.loggers.wandb.WandbLogger):
+            import wandb
+
+            wandb.finish()
+
+
+__all__ = ["get_logger", "extras", "log_hyperparameters", "finish"]
