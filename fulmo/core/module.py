@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Callable, Dict, List, Optional, Sequence, Type, Union
+from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import hydra
 import torch
@@ -11,7 +11,9 @@ from torch.optim.optimizer import Optimizer
 from ..callbacks.base import BaseCallback
 from ..losses import CriterionMatcher, CriterionWrapper, OnlineLabelSmoothing
 from ..metrics import MetricWrapper
-from ..models.utils import freeze_bn, unfreeze_bn
+from ..models import MODEL_DATACLASS_REGISTRY, MODEL_REGISTRY
+from ..optimizers.lookahead import Lookahead
+from ..schedulers import SCHEDULER_DATACLASS_REGISTRY, SCHEDULER_REGISTRY
 from ..settings import Stage, logger
 from .exceptions import PipelineCriterionBuildError, PipelineMetricBuildError, PipelineOptimizerBuildError
 
@@ -117,7 +119,8 @@ class BaseModule(LightningModule):
         Returns:
             `:class:torch.nn.Module`
         """
-        model = hydra.utils.instantiate(self.config.model)
+        config = MODEL_DATACLASS_REGISTRY[self.config.model.name](**self.config.model)
+        model = MODEL_REGISTRY[self.config.model.name](config)
         return model
 
     def _build_criterion(self) -> CriterionWrapper:
@@ -171,24 +174,12 @@ class BaseModule(LightningModule):
             the losses and some additional metrics
         """
         outputs = self(batch)
-        outputs = self._postprocess_outputs(outputs)
-        losses, loss = self.criterion_wrapper(outputs, batch, stage)
-        if stage == Stage.train:
-            is_second_step_on = self.config.get("second_forward_backward", None)
-            if is_second_step_on and self.config.optimizer.get("second_optimizer", None):
-                optimizer: Optimizer = self.optimizers()  # type: ignore[assignment]
-                self.manual_backward(loss, optimizer)
-                optimizer.first_step(zero_grad=True)
-
-                freeze_bn(self.model)
-                _, loss_ = self.compute_loss(batch)
-                self.manual_backward(loss_, optimizer)
-                optimizer.second_step(zero_grad=True)
-                unfreeze_bn(self.model)
-
-        log_dict = self._compute_metrics(outputs, batch, stage)
+        batch, outputs_to_criterion = self._prepare_values_to_criterion(batch, outputs)
+        losses, loss = self.criterion_wrapper(outputs_to_criterion, batch, stage)
+        batch, outputs_to_metric = self._prepare_values_to_metric(batch, outputs)
+        log_dict = self._compute_metrics(outputs_to_metric, batch, stage)
         output_dict = dict()
-        for key, value in outputs.items():
+        for key, value in outputs_to_metric.items():
             batch[key] = value
 
         for key in self._keys_to_callbacks:
@@ -203,9 +194,17 @@ class BaseModule(LightningModule):
         log_dict[f"{stage.value}/loss"] = loss
         return {**log_dict, **output_dict}
 
-    def _postprocess_outputs(self, outputs: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+    def _prepare_values_to_criterion(
+        self, batch: Dict[str, torch.Tensor], outputs: Dict[str, torch.Tensor]
+    ) -> Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor]]:
         """Post process model outputs."""
-        return outputs
+        return batch, outputs
+
+    def _prepare_values_to_metric(
+        self, batch: Dict[str, torch.Tensor], outputs: Dict[str, torch.Tensor]
+    ) -> Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor]]:
+        """Post process model outputs."""
+        return batch, outputs
 
     def forward(self, batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:  # type: ignore[override]
         """Run forward pass."""
@@ -289,71 +288,31 @@ class BaseModule(LightningModule):
     ) -> Union[Optimizer, Sequence[Optimizer], TOptimizer, Sequence[TOptimizer], None]:
         """Build optimizers and schedulers from config."""
         model_parameters = self.model.parameters()
-        if "optimizer_extension" in self.config:
+        is_optimizer_extension = self.config.get("optimizer_extension", None)
+        if is_optimizer_extension and self.config.optimizer_extension.get("lrs_per_module", None):
             model_parameters = list()
-            per_type: Optional[
-                Dict[str, Dict[str, Union[Type[torch.nn.Module], Dict[str, Union[int, float]]]]]
-            ] = self.config.optimizer_extension.get("per_type", None)
-
-            for module_name, dict_per_module in self.config.optimizer_extension.per_module.items():
+            for module_name, dict_per_module in self.config.optimizer_extension.lrs_per_module.items():
                 params_per_module = dict_per_module["params"]
                 module = getattr(self.model, module_name)
-                if per_type:
-                    for _, dict_per_type in per_type.items():
-                        dtype: Type[torch.nn.Module] = dict_per_type["dtype"]  # type: ignore[assignment]
-                        params_per_type: Dict[str, Union[int, float]] = dict_per_type["params"]  # type: ignore[assignment]
-                        group_related_to_type = [
-                            p for layer in module.children() for p in layer.parameters() if isinstance(layer, dtype)
-                        ]
-                        group_related_to_per_module = [
-                            p for layer in module.children() for p in layer.parameters() if not isinstance(layer, dtype)
-                        ]
-                        if group_related_to_type:
-                            model_parameters.append(dict(params=group_related_to_type, **params_per_type))
-                        if group_related_to_per_module:
-                            model_parameters.append(dict(params=group_related_to_per_module, **params_per_module))
-                else:
-                    model_parameters.append(dict(params=module.parameters(), **params_per_module))
+                model_parameters.append(dict(params=module.parameters(), **params_per_module))
             model_parameters = iter(model_parameters)
 
-        if self.config.optimizer.get("second_optimizer", None) and self.config.get("second_forward_backward", None):
-            if "SAM" in self.config.optimizer["second_optimizer"]["_target_"]:
-                optimizer: Optimizer = hydra.utils.instantiate(
-                    self.config.optimizer["second_optimizer"],
-                    _convert_="partial",
-                    params=model_parameters,
-                    optimizer=self.config.optimizer["base_optimizer"],
-                )
-            else:
-                base_optimizer: Optimizer = hydra.utils.instantiate(
-                    self.config.optimizer["base_optimizer"], _convert_="partial", params=model_parameters
-                )
-                optimizer = hydra.utils.instantiate(
-                    self.config.optimizer["second_optimizer"], _convert_="partial", optimizer=base_optimizer
-                )
-        else:
-            optimizer = hydra.utils.instantiate(
-                self.config.optimizer["base_optimizer"], _convert_="partial", params=model_parameters
-            )
+        optimizer = hydra.utils.instantiate(self.config.optimizer, _convert_="partial", params=model_parameters)
+        if is_optimizer_extension and self.config.optimizer_extension.get("lookahead", None):
+            optimizer = Lookahead(optimizer, **self.config.optimizer_extension.lookahead.params)
 
-        if self.config.get("use_lr_scheduler", None):
-            scheduler_class = self.config.scheduler["_target_"]
-            if "ReduceLROnPlateau" in scheduler_class:
-                scheduler = hydra.utils.instantiate(self.config.scheduler, optimizer=optimizer)
-                scheduler = {"scheduler": scheduler, "monitor": self.config.callback.model_checkpoint.monitor}
-            elif "OneCycleLR" in scheduler_class:
-                interval = self.config.scheduler.pop("interval", "epoch")
-                scheduler = hydra.utils.instantiate(
-                    self.config.scheduler, optimizer=optimizer, steps_per_epoch=len(self.datamodule.data_train)
-                )
+        config = SCHEDULER_DATACLASS_REGISTRY[self.config.scheduler.name](**self.config.scheduler)
+        scheduler = SCHEDULER_REGISTRY[self.config.scheduler.name](optimizer, config)
+
+        if self.config.get("use_scheduler", None):
+            if "reduce_lr_on_plateau" == config.name:
                 scheduler = {
                     "scheduler": scheduler,
-                    "interval": interval,
-                    "frequency": 1,
+                    "monitor": self.config.callback.model_checkpoint.monitor,
+                    **scheduler.lightning_parameters,
                 }
-            else:
-                scheduler = hydra.utils.instantiate(self.config.scheduler, optimizer=optimizer)
-
+            elif "one_cycle_lr" == config.name:
+                scheduler = {"scheduler": scheduler, **scheduler.lightning_parameters}
             return {"optimizer": optimizer, "lr_scheduler": scheduler}
 
         return optimizer

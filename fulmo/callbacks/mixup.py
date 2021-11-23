@@ -38,11 +38,10 @@ class MixUpCallback(BaseMixCallback):
 
         mixed_features = lam * features + (1 - lam) * features[index, :]
         lam = torch.tensor([lam]).to(features.device).squeeze(0)
-        y_a, y_b = target, target[index]
         batch[self.input_key] = mixed_features
-        batch[self.target_key] = y_a
-        batch[DEFAULT_SETTINGS.mix_target_key] = y_b
-        batch[DEFAULT_SETTINGS.mix_lam_key] = lam
+        batch[DEFAULT_SETTINGS.mix_target_key] = target[index]
+        batch[DEFAULT_SETTINGS.mix_lam_a_key] = torch.ones(batch_size, device=lam.device) * lam
+        batch[DEFAULT_SETTINGS.mix_lam_b_key] = torch.ones(batch_size, device=lam.device) * (1 - lam)
 
     def on_train_batch_start(
         self,
@@ -50,7 +49,7 @@ class MixUpCallback(BaseMixCallback):
         pl_module: pl.LightningModule,
         batch: Dict[str, torch.Tensor],
         batch_idx: int,
-        dataloader_idx: int,
+        unused: Optional[int] = 0,
     ) -> None:
         """Called when the train batch begins."""  # noqa: D401
         self._is_mixed = False
@@ -88,7 +87,7 @@ class MixUpWHCallback(MixUpCallback):
         pl_module: pl.LightningModule,
         batch: Dict[str, torch.Tensor],
         batch_idx: int,
-        dataloader_idx: int,
+        dataloader_idx: Optional[int] = 0,
     ) -> None:
         """Called when the train batch begins."""  # noqa: D401
         q = np.random.uniform(0, 1)
@@ -108,11 +107,9 @@ class MixUpWHCallback(MixUpCallback):
                     self._do_mixup(batch)
         self._current_step += 1
 
-    def on_train_epoch_end(
-        self, trainer: pl.Trainer, pl_module: pl.LightningModule, unused: Optional[int] = None
-    ) -> None:
+    def on_train_epoch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
         """Reset step count."""
-        super().on_train_epoch_end(trainer, pl_module, unused)
+        super().on_train_epoch_end(trainer, pl_module)
         self._current_step = 0
 
 

@@ -11,6 +11,7 @@ class Stage(str, Enum):
     train = "train"
     val = "val"
     test = "test"
+    predict = "predict"
 
     def __eq__(self, other: Union[str, Enum]) -> bool:  # type: ignore[override]
         other = other.value if isinstance(other, Enum) else str(other)
@@ -37,10 +38,12 @@ class Settings(FrozenClass):
     def __init__(
         self,
         mix_target_key: str = "mixed_target",
-        mix_lam_key: str = "lam",
+        mix_lam_a_key: str = "lam_a",
+        mix_lam_b_key: str = "lam_b",
     ) -> None:
         self.mix_target_key = mix_target_key
-        self.mix_lam_key = mix_lam_key
+        self.mix_lam_a_key = mix_lam_a_key
+        self.mix_lam_b_key = mix_lam_b_key
 
 
 DEFAULT_SETTINGS = Settings()

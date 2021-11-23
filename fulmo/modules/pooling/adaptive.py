@@ -13,45 +13,53 @@ class AdaptiveConcatPool2d(nn.Module):
         """Create a new instance of AdaptiveConcatPool2d."""
         super().__init__()
         self.output_size = sz or 1
-        self.multiplier = multiplier or 1.0
-        self.mode = mode
-        self.ap = nn.AdaptiveAvgPool2d(self.output_size)
-        self.mp = nn.AdaptiveMaxPool2d(self.output_size)
+        if mode == 0:
+            self.pooler = adaptive_catavgmax_pool2d
+        else:
+            self.pooler = adaptive_avgmax_pool2d
+
+        if multiplier:
+            self.weight = multiplier
+        else:
+            self.register_parameter("weight", torch.nn.Parameter(torch.tensor(1.0)))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Run forward pass."""
-        mp = self.mp(x)
-        ap = self.ap(x)
-        if self.mode == 0:
-            return self.multiplier * torch.cat([mp, ap], 1)
-        return self.multiplier * (mp + ap)
+        return self.weight * self.pooler(x, self.output_size)
 
 
 class AdaptiveAvgMaxPool2d(nn.Module):
     """Layer that sums AdaptiveAvgPool2d and AdaptiveMaxPool2d"""
 
-    def __init__(self, output_size: int = 1, multiplier: float = 0.5) -> None:
+    def __init__(self, output_size: int = 1, multiplier: Optional[float] = None) -> None:
         """Create a new instance of AdaptiveAvgMaxPool2d."""
         super(AdaptiveAvgMaxPool2d, self).__init__()
         self.output_size = output_size
-        self.multiplier = multiplier
+        if multiplier:
+            self.weight = multiplier
+        else:
+            self.register_parameter("weight", torch.nn.Parameter(torch.tensor(1.0)))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Run forward pass."""
-        return adaptive_avgmax_pool2d(x, self.output_size, self.multiplier)
+        return self.weight * adaptive_avgmax_pool2d(x, self.output_size)
 
 
 class AdaptiveCatAvgMaxPool2d(nn.Module):
     """Layer that concats AdaptiveAvgPool2d and AdaptiveMaxPool2d"""
 
-    def __init__(self, output_size: int = 1) -> None:
+    def __init__(self, output_size: int = 1, multiplier: Optional[float] = None) -> None:
         """Create a new instance of AdaptiveCatAvgMaxPool2d."""
         super(AdaptiveCatAvgMaxPool2d, self).__init__()
         self.output_size = output_size
+        if multiplier:
+            self.weight = multiplier
+        else:
+            self.register_parameter("weight", torch.nn.Parameter(torch.tensor(1.0)))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Run forward pass."""
-        return adaptive_catavgmax_pool2d(x, self.output_size)
+        return self.weight * adaptive_catavgmax_pool2d(x, self.output_size)
 
 
 __all__ = ["AdaptiveConcatPool2d", "AdaptiveAvgMaxPool2d", "AdaptiveCatAvgMaxPool2d"]

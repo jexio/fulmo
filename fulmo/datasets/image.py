@@ -48,7 +48,8 @@ class ImageCsvDataset(Dataset):  # type: ignore[misc]
         dict_ = self.open_fn(item)
         if self._apply_transforms:
             dict_ = self.transforms(dict_)  # type: ignore
-        dict_ = self.preprocessing(dict_)  # type: ignore
+        else:
+            dict_ = self.preprocessing(dict_)  # type: ignore
         return dict_
 
     def __len__(self) -> int:

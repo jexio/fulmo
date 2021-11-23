@@ -49,9 +49,9 @@ class SelectAdaptivePool2d(nn.Module):
             raise KeyError(f"Pooling {pool_name} does not implemented")
 
         if pool_name == "avgmax":
-            self.pool = AdaptiveAvgMaxPool2d(output_size)
+            self.pool = AdaptiveAvgMaxPool2d(output_size, **kwargs)
         elif pool_name == "catavgmax":
-            self.pool = AdaptiveCatAvgMaxPool2d(output_size)
+            self.pool = AdaptiveCatAvgMaxPool2d(output_size, **kwargs)
         elif pool_name == "adaptive_concat":
             self.pool = AdaptiveConcatPool2d(output_size, **kwargs)
         elif pool_name == "gem":

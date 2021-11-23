@@ -31,9 +31,9 @@ class AugmentationOnOffCallback(BaseCallback):
             if isinstance(pl_module.trainer.model, BaseModel):
                 pl_module.trainer.model.apply_transforms = True
 
-    def on_train_epoch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule, unused: Optional = None) -> None:
+    def on_train_epoch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
         """Disable augmentations for training data."""
-        super().on_train_epoch_end(trainer, pl_module, unused)
+        super().on_train_epoch_end(trainer, pl_module)
         if self._disable:
             pl_module.train_dataloader().dataset.apply_transforms = False
             pl_module.val_dataloader().dataset.apply_transforms = False
