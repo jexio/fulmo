@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2021-11-23
+
+### Add
+
+- **registry**: add scheduler registry 
+- **registry**: add model registry
 
 ## [0.3.2] - 2021-09-02
 
@@ -55,6 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **reader**: `NpyReader`
 - **ci**: First release on PyPI.
 
-[Unreleased]: https://github.com/jexio/fulmo/compare/v0.3.2...develop
+[Unreleased]: https://github.com/jexio/fulmo/compare/v1.0.0...develop
+[1.0.0]: https://github.com/jexio/fulmo/compare/v0.3.2...v1.0.0
 [0.3.2]: https://github.com/jexio/fulmo/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/jexio/fulmo/compare/releases/tag/v0.3.1
