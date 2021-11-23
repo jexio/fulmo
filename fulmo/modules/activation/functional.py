@@ -16,6 +16,11 @@ def swish(x: torch.Tensor, beta: float = 1.0) -> torch.Tensor:
 
 
 class SwishOP(Function):
+    """Sigmoid-Weighted Linear Units for Neural Network Function Approximation in Reinforcement Learning.
+
+    References: https://arxiv.org/abs/1702.03118
+    """
+
     @staticmethod
     def forward(ctx: Function, tensor: torch.Tensor, beta: float = 1.0) -> torch.Tensor:
         """Run forward pass."""
