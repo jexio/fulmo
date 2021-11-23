@@ -1,1 +1,1 @@
-from .factory import ImageClassificationModel, ImageClassificationModelExtendsKornia  # noqa: F401
+from .factory import ImageClassificationModel  # noqa: F401
