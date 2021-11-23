@@ -39,6 +39,7 @@ jobs:
       - name: Publish to PYPI
         uses: JRubics/poetry-publish@v1.9
         with:
+          python_version: "3.8.10"
           pypi_token: ${{ secrets.PYPI_API_TOKEN }}
           build_format: 'sdist'
           ignore_dev_requirements: yes
