@@ -748,7 +748,7 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "kornia"
-version = "0.5.11"
+version = "0.6.1"
 description = "Open Source Differentiable Computer Vision Library for PyTorch"
 category = "main"
 optional = false
@@ -756,7 +756,12 @@ python-versions = ">=3.6"
 
 [package.dependencies]
 packaging = "*"
-torch = ">=1.6.0"
+torch = ">=1.8.1"
+
+[package.extras]
+all = ["accelerate (==0.5.1)", "dataclasses", "pytest (==6.2.5)", "pytest-flake8 (==1.0.7)", "pytest-cov (==3.0.0)", "pytest-mypy (==0.8.1)", "pytest-xdist (==2.4.0)", "autopep8", "pydocstyle", "pre-commit (>=2.0)", "yapf", "isort", "numpy", "scipy"]
+dev = ["pytest (==6.2.5)", "pytest-flake8 (==1.0.7)", "pytest-cov (==3.0.0)", "pytest-mypy (==0.8.1)", "pytest-xdist (==2.4.0)", "autopep8", "pydocstyle", "pre-commit (>=2.0)", "yapf", "isort", "numpy", "scipy"]
+x = ["accelerate (==0.5.1)", "dataclasses"]
 
 [[package]]
 name = "markdown"
@@ -1841,7 +1846,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = "<3.10,>=3.8"
-content-hash = "11b308750d4da0004c644a27409d9737a61dd7f6d9a550749c3ef04ab85cea86"
+content-hash = "189d40f52f787f7849670c151fd431e90d39d31c49aed691d173a16a5d4c4fcd"
 
 [metadata.files]
 absl-py = [
@@ -2203,8 +2208,8 @@ kiwisolver = [
     {file = "kiwisolver-1.3.2.tar.gz", hash = "sha256:fc4453705b81d03568d5b808ad8f09c77c47534f6ac2e72e733f9ca4714aa75c"},
 ]
 kornia = [
-    {file = "kornia-0.5.11-py2.py3-none-any.whl", hash = "sha256:854db52db6b84e74004db18612278599737efbe22a1db8744a1c69a185e30118"},
-    {file = "kornia-0.5.11.tar.gz", hash = "sha256:c2e3dd3f27a650b284fc8d261b9a7cba414c4d0a01e4d7ae518fd1466e7f3085"},
+    {file = "kornia-0.6.1-py2.py3-none-any.whl", hash = "sha256:c896398fd2c3b4db08c4927a88f859925a24491d2e25476f62d8d4fa5a5a2a7e"},
+    {file = "kornia-0.6.1.tar.gz", hash = "sha256:f638fb3309f88666545866c162f510b6d485fd8f7131d5570d4e6c0d295fdcd6"},
 ]
 markdown = [
     {file = "Markdown-3.3.4-py3-none-any.whl", hash = "sha256:96c3ba1261de2f7547b46a00ea8463832c921d3f9d6aba3f255a6f71386db20c"},
