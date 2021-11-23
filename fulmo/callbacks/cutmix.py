@@ -41,12 +41,10 @@ class CutMixCallback(BaseMixCallback):
         index = torch.randperm(batch_size).to(target.device)
         x1, y1, x2, y2, lam = self._get_bbox(batch, lam)
         features[:, :, x1:x2, y1:y2] = features[index, :, x1:x2, y1:y2]
-        y_a, y_b = target, target[index]
         lam = torch.tensor([lam]).to(features.device).squeeze(0)
-        batch[self.input_key] = features
-        batch[self.target_key] = y_a
-        batch[DEFAULT_SETTINGS.mix_target_key] = y_b
-        batch[DEFAULT_SETTINGS.mix_lam_key] = lam
+        batch[DEFAULT_SETTINGS.mix_target_key] = target[index]
+        batch[DEFAULT_SETTINGS.mix_lam_a_key] = torch.ones(batch_size, device=lam.device) * lam
+        batch[DEFAULT_SETTINGS.mix_lam_b_key] = torch.ones(batch_size, device=lam.device) * (1 - lam)
 
     def on_train_batch_start(
         self,
@@ -54,7 +52,7 @@ class CutMixCallback(BaseMixCallback):
         pl_module: pl.LightningModule,
         batch: Dict[str, torch.Tensor],
         batch_idx: int,
-        dataloader_idx: int,
+        dataloader_idx: Optional[int] = 0,
     ) -> None:
         """Called when the train batch begins."""  # noqa: D401
         if self.alpha > 0:
@@ -100,7 +98,7 @@ class SegmentationCutMixCallback(CutMixCallback):
         pl_module: pl.LightningModule,
         batch: Dict[str, torch.Tensor],
         batch_idx: int,
-        dataloader_idx: int,
+        dataloader_idx: Optional[int] = 0,
     ) -> None:
         """Called when the train batch begins."""  # noqa: D401
         if self.alpha > 0:
