@@ -5,7 +5,7 @@ import timm
 import torch
 import torch.nn as nn
 
-from ..layers.activation import Mish, Swish
+from ...modules.activation import Mish, Swish
 
 
 activation_dict = dict(lrelu=nn.LeakyReLU, relu=nn.ReLU, elu=nn.ELU, mish=Mish, swish=Swish, identity=nn.Identity)
@@ -142,16 +142,16 @@ class Head(AbstractHead, nn.Module):
 class Encoder(AbstractEncoder, nn.Module):
     """Feature extractor based on `timm` library."""
 
-    def __init__(self, name: str, pretrained: bool = False, in_channels: int = 3) -> None:
+    def __init__(self, name: str, *args, **kwargs) -> None:
         """Create a new instance of Encoder.
 
         Args:
-            name: name of models to instantiate.
-            pretrained: if true load pretrained weights.
-            in_channels: number of input channels.
+            name: A name of models to instantiate.
+            args: Parameters for timm models.
+            kwargs: Parameters for timm models.
         """
         super(Encoder, self).__init__()
-        self.model = timm.create_model(name, pretrained=pretrained, in_chans=in_channels, num_classes=0, global_pool="")
+        self.model = timm.create_model(name, *args, **kwargs)
         self._in_features: int = self.model.num_features
 
     @property

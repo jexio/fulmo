@@ -1,14 +1,48 @@
-from typing import Dict, Optional, Union
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Tuple
 
 import torch
 import torch.nn as nn
-from omegaconf import ListConfig
 
+from ...dataclass.configurations import DeepMMDataclass
+from ...modules.pooling import SelectAdaptivePool2d
+from .. import register_model
 from ..interface import BaseModel
-from ..layers.pooling import SelectAdaptivePool2d
 from .base import Encoder, Head
 
 
+@dataclass
+class ImageClassificationModel(DeepMMDataclass):
+    """Super class of image classification model."""
+
+    name: str = field(default="image_classification", metadata={"help": "Model name"})
+    backbone: str = field(default="resnet18", metadata={"help": "A name of models to instantiate."})
+    model_parameters: Dict[str, Any] = field(
+        default_factory=lambda: {"pretrained": False, "in_chans": 1, "num_classes": 0, "global_pool": ""},
+        metadata={"help": "A timm model parameters."},
+    )
+    pool_name: Optional[str] = field(default=None, metadata={"help": "A name of pooling to instantiate."})
+    pool_parameters: Optional[Dict[str, Any]] = field(
+        default=None,
+        metadata={"help": "Specific parameters for the selected pool type.", "value_type": "Union[float, int]"},
+    )
+    num_layers: int = field(default=1, metadata={"help": "Number of block except the last fc with following layers."})
+    dropout_head: float = field(default=0.0, metadata={"help": "Append `Dropout` with passed value or not."})
+    activation_head_name: str = field(default="relu", metadata={"help": "A name of activation."})
+    activation_head_parameters: Optional[Dict[str, Any]] = field(
+        default=None,
+        metadata={
+            "help": "Specific parameters for the selected activation type.",
+            "value_type": "Union[float, int, str]",
+        },
+    )
+    layers_head_order: List = field(
+        default_factory=lambda: ["lin", "bn", "activation", "dp"], metadata={"help": "Layers order."}
+    )
+    num_classes: int = field(default=1, metadata={"help": "Number of classes to learn."})
+
+
+@register_model("image_classification", dataclass=ImageClassificationModel)
 class ImageClassificationModel(BaseModel, nn.Module):
     """A neural network for image classification tasks.
 
@@ -17,61 +51,42 @@ class ImageClassificationModel(BaseModel, nn.Module):
 
     def __init__(
         self,
-        backbone: str,
-        pretrained: bool = False,
-        in_channels: int = 3,
-        pool_name: str = "avg",
-        pool_parameters: Optional[Dict[str, Union[float, int]]] = None,
-        num_layers: int = 1,
-        dropout_head: float = 0.0,
-        activation_head_name: str = "relu",
-        activation_head_parameters: Optional[Dict[str, Union[float, int, str]]] = None,
-        layers_head_order: ListConfig = ("lin", "bn", "activation", "dp"),
-        num_classes: int = 1,
+        config: ImageClassificationModel,
     ) -> None:
         """Create a new instance of ImageClassificationModel.
 
         Args:
-            backbone: name of models to instantiate
-            pretrained: load pretrained weights if true
-            in_channels: number of input channels for backbone
-            pool_name: name of pooling to instantiate
-            pool_parameters: specific parameters for the selected pool type
-            num_layers: number of block except the last fc with following layers
-            dropout_head: append "Dropout" or not.
-            activation_head_name: name of activation
-            activation_head_parameters: specific parameters for the selected activation type
-            layers_head_order: layers order
-            num_classes: number of classes to learn
+            config: Configuration set.
         """
-        super(ImageClassificationModel, self).__init__()
+        super().__init__()
 
-        layers_head_order = [str(item) for item in layers_head_order]
+        layers_head_order = config.layers_head_order
+        if not isinstance(layers_head_order, Tuple):
+            layers_head_order = tuple(layers_head_order)
+
         self._apply_transforms = True
-        encoder = Encoder(backbone, pretrained=pretrained, in_channels=in_channels)
-        pool_in_channels = encoder.out_features
-        self.backbone: nn.Module = nn.Sequential(*encoder.model.children())
-        pool_parameters = pool_parameters if pool_parameters else {}
-        self.pool: nn.Module = SelectAdaptivePool2d(
-            in_channels=pool_in_channels,
-            pool_name=pool_name,
-            **pool_parameters,
-        )
-        pool_out_channels: int = pool_in_channels * self.pool.multiplication_coefficient
-        self.head = Head(
-            in_channels=pool_out_channels,
-            out_channels=num_classes,
-            num_layers=num_layers,
-            dropout=dropout_head,
-            activation_name=activation_head_name,
-            activation_parameters=activation_head_parameters,
-            layers_order=tuple(layers_head_order),
-        )
+        self.backbone: nn.Module = Encoder(config.backbone, **config.model_parameters)
+        pool_in_channels = self.backbone.out_features
+        pool_parameters = config.pool_parameters if config.pool_parameters else {}
+        self.pool = nn.Identity()
 
-    @property
-    def apply_transforms(self) -> bool:
-        """Get `apply_transforms` state."""
-        return self._apply_transforms
+        if config.pool_name:
+            self.pool: nn.Module = SelectAdaptivePool2d(
+                in_channels=pool_in_channels,
+                pool_name=config.pool_name,
+                **pool_parameters,
+            )
+            pool_in_channels: int = pool_in_channels * self.pool.multiplication_coefficient
+
+        self.head = Head(
+            in_channels=pool_in_channels,
+            out_channels=config.num_classes,
+            num_layers=config.num_layers,
+            dropout=config.dropout_head,
+            activation_name=config.activation_head_name,
+            activation_parameters=config.activation_head_parameters,
+            layers_order=layers_head_order,
+        )
 
     @property
     def in_features(self) -> int:
@@ -82,11 +97,6 @@ class ImageClassificationModel(BaseModel, nn.Module):
     def num_parameters(self) -> int:
         """Get number of parameters."""
         return sum(param.numel() for param in self.parameters())
-
-    @apply_transforms.setter  # type: ignore
-    def apply_transforms(self, value: bool) -> None:
-        """Set `apply_transforms` state."""
-        self._apply_transforms = value
 
     def extract_features(self, features: torch.Tensor) -> torch.Tensor:
         """Extract features from the layers."""
@@ -102,71 +112,4 @@ class ImageClassificationModel(BaseModel, nn.Module):
         return features
 
 
-class ImageClassificationModelExtendsKornia(ImageClassificationModel):
-    """Create a neural network for image classification tasks.
-
-    Perform data augmentation using Kornia
-    Create nn with the following structure. Transforms -> Encoder -> Pooling -> Head.
-    """
-
-    def __init__(
-        self,
-        transforms: ListConfig,
-        backbone: str,
-        pretrained: bool = False,
-        in_channels: int = 3,
-        pool_name: str = "avg",
-        pool_parameters: Optional[Dict[str, Union[float, int]]] = None,
-        num_layers: int = 1,
-        dropout_head: float = 0.0,
-        activation_head_name: str = "relu",
-        activation_head_parameters: Optional[Dict[str, Union[float, int, str]]] = None,
-        layers_head_order: ListConfig = ("lin", "bn", "activation", "dp"),
-        num_classes: int = 1,
-    ) -> None:
-        """Create a new instance of ImageClassificationModelExtendsKornia.
-
-        Args:
-            transforms: list of augmentations to instantiate
-            backbone: name of models to instantiate
-            in_channels: number of input channels for backbone
-            pool_name: name of pooling to instantiate
-            pool_parameters: specific parameters for the selected pool type
-            num_layers: number of block except the last fc with following layers
-            dropout_head: append "Dropout" or not.
-            activation_head_name: name of activation
-            activation_head_parameters: specific parameters for the selected activation type
-            layers_head_order: layers order
-            num_classes: number of classes to learn
-            pretrained: load pretrained ImageNet-1k weights if true
-        """
-        super(ImageClassificationModelExtendsKornia, self).__init__(
-            backbone,
-            pretrained,
-            in_channels,
-            pool_name,
-            pool_parameters,
-            num_layers,
-            dropout_head,
-            activation_head_name,
-            activation_head_parameters,
-            layers_head_order,
-            num_classes,
-        )
-        self.transforms = nn.Sequential(*transforms)
-
-    def _augment(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply kornia augmentations to `x`."""
-        return self.transforms(x)
-
-    def extract_features(self, features: torch.Tensor) -> torch.Tensor:
-        """Extract features from the layers."""
-        if self.apply_transforms:
-            features = self._augment(features)
-        features = self.backbone(features)
-        features = self.pool(features)
-        features = features.view(features.size(0), -1)
-        return features
-
-
-__all__ = ["ImageClassificationModel", "ImageClassificationModelExtendsKornia"]
+__all__ = ["ImageClassificationModel"]
