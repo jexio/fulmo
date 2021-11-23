@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Dict
 
 import pytorch_lightning as pl
 import torch
@@ -31,9 +31,7 @@ class ScheduledDropoutCallback(BaseCallback):
                 if isinstance(layer, torch.nn.Dropout):
                     self._dropout_rates[layer] = layer.p
 
-    def on_train_epoch_end(
-        self, trainer: pl.Trainer, pl_module: pl.LightningModule, unused: Optional[int] = None
-    ) -> None:
+    def on_train_epoch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
         """Changes dropout value."""
         module = getattr(pl_module.model, self.attr_name)
         if isinstance(module, torch.nn.Sequential):
