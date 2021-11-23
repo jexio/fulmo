@@ -114,7 +114,7 @@ pip install fulmo | poetry add fulmo
 <details>
 <summary>Second, create your project</summary>
 
-See [examples](https://github.com/jexio/g2net/tree/master/configs) folder.
+See [examples](https://github.com/jexio/mnist/tree/master/configs) folder.
 
 </details>
 
