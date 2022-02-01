@@ -5,7 +5,7 @@ default_stages: ["commit", "push"]
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.0.1
+    rev: v4.1.0
     hooks:
       - id: check-toml
       - id: check-yaml
@@ -13,18 +13,18 @@ repos:
       - id: end-of-file-fixer
 
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v2.20.0
+    rev: v2.20.4
     hooks:
       - id: commitizen
         stages: [commit-msg]
 
   - repo: https://github.com/timothycrosley/isort
-    rev: 5.9.3
+    rev: 5.10.1
     hooks:
       - id: isort
 
   - repo: https://github.com/psf/black
-    rev: 21.10b0
+    rev: 22.1.0
     hooks:
       - id: black
 
