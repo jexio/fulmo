@@ -37,7 +37,7 @@ jobs:
           prerelease: false
 
       - name: Publish to PYPI
-        uses: JRubics/poetry-publish@v1.9
+        uses: JRubics/poetry-publish@v1.16
         with:
           python_version: "3.8.10"
           pypi_token: ${{ secrets.PYPI_API_TOKEN }}
